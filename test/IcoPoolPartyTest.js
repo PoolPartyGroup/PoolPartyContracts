@@ -11,6 +11,7 @@ let tokenSaleContract;
 let dealTokenContract;
 
 const Status = {Open: 0, WaterMarkReached: 1, DueDiligence: 2, InReview: 3, Claim: 4, Refunding: 5};
+const KickReason = {Other: 0, Kyc: 1};
 
 contract('Pool Party ICO', function (accounts) {
 
@@ -133,9 +134,9 @@ contract('Pool Party ICO', function (accounts) {
 
         it("Should kick user", async () => {
             //Expect throw because of wrong state
-            await expectThrow(icoPoolPartyContract.kickUser(accounts[2], "Kick user reason", {from: accounts[7]}));
+            await expectThrow(icoPoolPartyContract.kickUser(accounts[2], KickReason.Other, {from: accounts[7]}));
             await sleep(3000);
-            await icoPoolPartyContract.kickUser(accounts[2], "Kick user reason", {from: accounts[7]});
+            await icoPoolPartyContract.kickUser(accounts[2], KickReason.Other, {from: accounts[7]});
             smartLog("Account 2 eth after being kicked [" + web3.fromWei((await icoPoolPartyContract.investors(accounts[2]))[0]) + "]");
             assert.equal((await icoPoolPartyContract.investors(accounts[2]))[0], 0, "User account should be 0");
             smartLog("Total investment amount [" + web3.fromWei(await icoPoolPartyContract.totalPoolInvestments()) + "]");

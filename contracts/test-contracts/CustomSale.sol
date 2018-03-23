@@ -3,12 +3,18 @@ pragma solidity ^0.4.18;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./GenericToken.sol";
 
+/**
+ * IMPORTANT: This is an overly simplified version of a token sale contract used only by ICO Pool Party as a proof of concept
+ * This code SHOULD NOT be used in any production application.
+ */
 contract CustomSale is Ownable {
     GenericToken public token;
     uint256 tokenPrice;
     uint256 amountSentToSale;
 
-    function () payable {}
+    function () public payable {
+        require(this.delegatecall(bytes4(keccak256("buy()"))));
+    }
 
     function CustomSale(uint256 _tokenPrice, address _token) public {
         tokenPrice = _tokenPrice;

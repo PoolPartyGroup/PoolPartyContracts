@@ -65,7 +65,13 @@ contract IcoPoolParty is Ownable, usingOraclize {
     address[] public investorList;
 
     mapping(address => Investor) public investors;
+    mapping(address => KickedUser) public kickedUsers;
     mapping(bytes32 => bytes32) queryMapping;
+
+    struct KickedUser {
+        bool hasBeenKicked;
+        KickReason kickReason;
+    }
 
     struct Investor {
         uint256 investmentAmount;
@@ -79,6 +85,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
     }
 
     enum Status {Open, WaterMarkReached, DueDiligence, InReview, Claim}
+    enum KickReason {Other, Kyc}
 
     event PoolCreated(string poolName, uint256 date);
     event SaleDetailsConfigured(address configurer, uint256 date);
@@ -86,7 +93,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
     event FundsWithdrawn(address indexed investor, uint256 amount, uint256 date);
     event FundsReleasedToIco(uint256 totalInvestmentAmount, uint256 subsidyAmount, uint256 feeAmount,  address tokenSaleAddress, uint256 date);
     event TokensClaimed(address indexed investor, uint256 investmentAmount, uint256 tokensTransferred, uint256 date);
-    event InvestorKicked(address indexed investor, uint256 fee, uint256 amount, string reason, uint256 date);
+    event InvestorKicked(address indexed investor, uint256 fee, uint256 amount, KickReason reason, uint256 date);
     event RefundClaimed(address indexed investor, uint256 amount, uint256 date);
     event AuthorizedAddressConfigured(address initiator, uint256 date);
     event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, uint256 publicTokenPrice, uint256 groupTokenPrice, bool subsidy, uint256 date);
@@ -368,22 +375,27 @@ contract IcoPoolParty is Ownable, usingOraclize {
      * @dev Allows owners to remove investors who do not comply with KYC. A small fee is charged to the person being kicked from the pool (only enough to cover gas costs of the transaction)
      * @param _userToKick Address of the person to kick from the pool.
      */
-    function kickUser(address _userToKick, string _reason)
+    function kickUser(address _userToKick, KickReason _reason)
         public
         timedTransition
         onlyAuthorizedAddress
     {
         require(poolStatus == Status.InReview);
 
-        Investor storage _kickedUser = investors[_userToKick];
-        uint256 _amountToRefund = _kickedUser.investmentAmount;
-        uint256 _index = _kickedUser.arrayIndex;
+        Investor storage _investor = investors[_userToKick];
+        uint256 _amountToRefund = _investor.investmentAmount;
+        uint256 _index = _investor.arrayIndex;
         require(_amountToRefund > 0);
         delete investors[_userToKick];
 
         poolParticipants = poolParticipants.sub(1);
         removeUserFromList(_index);
         totalPoolInvestments = totalPoolInvestments.sub(_amountToRefund);
+
+        KickedUser storage _kickedUser = kickedUsers[_userToKick];
+        _kickedUser.hasBeenKicked = true;
+        _kickedUser.kickReason = _reason;
+
 
         //fee to cover gas costs for being kicked - taken from investor
         uint256 _fee = _amountToRefund < withdrawalFee ? _amountToRefund : withdrawalFee;

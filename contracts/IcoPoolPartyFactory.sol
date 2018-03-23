@@ -38,7 +38,7 @@ contract IcoPoolPartyFactory is Ownable {
      */
     function IcoPoolPartyFactory(address _poolPartyOwnerAddress) public {
         require(_poolPartyOwnerAddress != 0x0);
-        feePercentage = 4;
+        feePercentage = 6;
         withdrawalFee = 0.0015 ether;
         groupDiscountPercent = 15;
         waterMark = 15 ether;

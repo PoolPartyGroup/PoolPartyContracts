@@ -8,6 +8,8 @@ const MIN_CONT_AMOUNT = web3.toWei("0.01");
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const DUE_DILIGENCE_DURATION = 2000;
 
+const expectedDiscountPercentage = 15;
+
 let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
@@ -20,6 +22,8 @@ const Status = {
     Claim: 4,
     Refunding: 5
 };
+
+const KickReason = {Other: 0, Kyc: 1};
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _tokenAddress] = accounts;
@@ -321,7 +325,7 @@ contract('IcoPoolParty', (accounts) => {
 
     describe('Function: completeConfiguration()', () => {
         it('should complete configuration when group price configuration is more than the expected pool discount', async () => {
-            assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), 15, "Expected discount should be 15%");
+            assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), expectedDiscountPercentage, "Expected discount should be 20%");
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
             await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
             //0.6 is more that a 15% discount of the public sale price (1 eth)
@@ -331,7 +335,7 @@ contract('IcoPoolParty', (accounts) => {
         });
 
         it('should complete configuration when group price configuration is exactly the expected pool discount', async () => {
-            assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), 15, "Expected discount should be 15%");
+            assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), expectedDiscountPercentage, "Expected discount should be 20%");
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
             //0.85 is exactly 15% discount of the public sale price (1 eth)
@@ -341,7 +345,7 @@ contract('IcoPoolParty', (accounts) => {
         });
 
         it('should attempt to complete configuration when group price configuration is less than expected pool discount', async () => {
-            assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), 15, "Expected discount should be 15%");
+            assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), expectedDiscountPercentage, "Expected discount should be 20%");
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
             //0.9 is less than 15% discount of the public sale price (1 eth) so this should fail
@@ -405,7 +409,7 @@ contract('IcoPoolParty', (accounts) => {
 
             await sleep(DUE_DILIGENCE_DURATION);
 
-            await icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner});
+            await icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner});
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("0.6"), "Incorrect total investment balance");
             assert.equal(await icoPoolParty.poolParticipants(), 1, "Incorrect number of participants");
@@ -420,7 +424,7 @@ contract('IcoPoolParty', (accounts) => {
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
             assert.equal(await icoPoolParty.poolParticipants(), 2, "Incorrect number of participants");
 
-            await expectThrow(icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner}));
+            await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
             assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
             assert.equal(await icoPoolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -437,7 +441,7 @@ contract('IcoPoolParty', (accounts) => {
 
             await sleep(DUE_DILIGENCE_DURATION);
 
-            await expectThrow(icoPoolParty.kickUser(_investor2, "Test kick", {from: _investor2}));
+            await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _investor2}));
             assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
             assert.equal(await icoPoolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -446,17 +450,17 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to kick user in incorrect state', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             assert.equal(await icoPoolParty.poolStatus(), Status.Open, "Pool in incorrect status");
-            await expectThrow(icoPoolParty.kickUser(_investor4, "Test kick", {from: _saleOwner}));
+            await expectThrow(icoPoolParty.kickUser(_investor4, KickReason.Other, {from: _saleOwner}));
 
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
             assert.equal(await icoPoolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
-            await expectThrow(icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner}));
+            await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
             await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
-            await expectThrow(icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner}));
+            await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
-            await expectThrow(icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner}));
+            await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
             assert.equal(await icoPoolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -473,7 +477,7 @@ contract('IcoPoolParty', (accounts) => {
 
             await sleep(DUE_DILIGENCE_DURATION);
 
-            await expectThrow(icoPoolParty.kickUser(_investor1, "Test kick", {from: _saleOwner}));
+            await expectThrow(icoPoolParty.kickUser(_investor1, KickReason.Other, {from: _saleOwner}));
             assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
             assert.equal(await icoPoolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -497,7 +501,7 @@ contract('IcoPoolParty', (accounts) => {
 
             await sleep(DUE_DILIGENCE_DURATION);
 
-            await icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner});
+            await icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner});
 
             assert.equal((await icoPoolParty.investors(_investor2))[0], 0, "Investment balance should be 0");
             assert.equal((await icoPoolParty.investors(_investor2))[5], false, "Investor should not be active");
@@ -505,7 +509,7 @@ contract('IcoPoolParty', (accounts) => {
             assert.equal(await icoPoolParty.poolParticipants(), 3, "Incorrect number of participants");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("0.8"), "Incorrect total investment balance");
 
-            await icoPoolParty.kickUser(_investor3, "Test kick", {from: _saleOwner});
+            await icoPoolParty.kickUser(_investor3, KickReason.Other, {from: _saleOwner});
             assert.equal((await icoPoolParty.investors(_investor3))[0], 0, "Investment balance should be 0");
             assert.equal((await icoPoolParty.investors(_investor3))[5], false, "Investor should not be active");
             assert.equal((await icoPoolParty.investors(_investor4))[3], 1, "Incorrect list index");
@@ -525,7 +529,7 @@ contract('IcoPoolParty', (accounts) => {
 
             await sleep(DUE_DILIGENCE_DURATION);
 
-            await icoPoolParty.kickUser(_investor2, "Test kick", {from: _saleOwner});
+            await icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner});
             //TODO: Check fee amount paid to _saleOwner and balance transferred to investor
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("0.6"), "Incorrect total investment balance");
