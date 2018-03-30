@@ -50,6 +50,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
 
     bool public subsidyRequired;
     bool public configUrlRequiresWww;
+    bool public feeWaived;
 
     bytes32 hashedBuyFunctionName;
     bytes32 hashedRefundFunctionName;
@@ -175,6 +176,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         minOraclizeFee = _minOraclizeFee;
         poolParticipants = 0;
         reviewPeriodStart = 0;
+        feeWaived = false;
 
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475); //TODO: ONLY USED FOR LOCAL TESTING
         PoolCreated(icoUrl, now);
@@ -418,7 +420,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         require(poolStatus == Status.InReview);
 
         //The fee must be paid by the caller of this function - which is authorizedConfigurationAddress
-        uint256 _feeAmount = totalPoolInvestments.mul(feePercentage).div(100);
+        uint256 _feeAmount = feeWaived ? 0 : totalPoolInvestments.mul(feePercentage).div(100);
         uint256 _amountToRelease = 0;
         uint256 _actualSubsidy = 0;
 
@@ -493,7 +495,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         if (this.balance >= totalPoolInvestments) {
             poolStatus = Status.Claim;
             balanceRemainingSnapshot = this.balance.sub(poolSubsidyAmount);
-            msg.sender.transfer(poolSubsidyAmount);
+            msg.sender.transfer(poolSubsidyAmount); //Return the subsidy amount to the ICO as the pool has no clai to this
             ClaimedRefundFromIco(address(this), msg.sender, balanceRemainingSnapshot, now);
         } else {
             NoRefundFromIco(address(this), msg.sender, now);
@@ -572,6 +574,16 @@ contract IcoPoolParty is Ownable, usingOraclize {
         Investor storage _investor = investors[_user];
         var (_percentageContribution, _refundAmount, _tokensDue) = calculateDerivedValues(_investor.investmentAmount);
         return (_percentageContribution, _refundAmount, _tokensDue, _investor.hasClaimedRefund, _investor.hasClaimedTokens);
+    }
+
+    /**
+     * @dev Allows the PoolParty owners to toggle the feeWaived flag for a particular ICO
+     */
+    function toggleFee()
+        public
+        onlyOwner
+    {
+        feeWaived = !feeWaived;
     }
 
     /**********************/

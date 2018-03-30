@@ -59,7 +59,7 @@ contract IcoPoolPartyFactory is Ownable {
         require(hashedPoolAddress[_hashedIcoUrl] == 0x0); //Check if name already exists
 
         IcoPoolParty poolPartyContract = new IcoPoolParty(_icoUrl, waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, minOraclizeFee);
-        poolPartyContract.transferOwnership(msg.sender);
+        poolPartyContract.transferOwnership(owner);
         partyList.push(address(poolPartyContract));
         hashedPoolAddress[_hashedIcoUrl] = address(poolPartyContract);
 
