@@ -233,6 +233,53 @@ contract('IcoPoolParty', (accounts) => {
         });
     });
 
+    describe('Function: releaseFundsToSale() - Generic Sale: Waive Fee. ', () => {
+        beforeEach(async () => {
+            await icoPoolPartyFactory.createNewPoolParty("waive.fee.test", {from: _investor1});
+
+            icoPoolParty = poolPartyArtifact.at(await icoPoolPartyFactory.partyList(1));
+            await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
+            await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
+            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {
+                from: _investor1,
+                value: web3.toWei("0.005")
+            });
+
+            await icoPoolParty.toggleFee({from: _deployer});
+            await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await icoPoolParty.completeConfiguration({from: _saleOwner});
+        });
+
+        it('should release funds to sale with waived fee', async () => {
+            assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
+            await sleep(DUE_DILIGENCE_DURATION);
+            const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
+            const subsidy = await calculateSubsidy();
+
+            await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy)});
+            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
+            assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
+            assert.equal(web3.eth.getBalance(_deployer), parseInt(ownerSnapshotBalance), "There should be no fee");
+        });
+
+        it('should toggle fee a few times and then release funds to sale with waived fee', async () => {
+            assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
+            await icoPoolParty.toggleFee({from: _deployer});
+            assert.equal(await icoPoolParty.feeWaived(), false, "Fee should not have been waived");
+            await icoPoolParty.toggleFee({from: _deployer});
+            assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
+
+            await sleep(DUE_DILIGENCE_DURATION);
+            const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
+            const subsidy = await calculateSubsidy();
+
+            await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy)});
+            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
+            assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
+            assert.equal(web3.eth.getBalance(_deployer), parseInt(ownerSnapshotBalance), "There should be no fee");
+        });
+    });
+
     async function calculateSubsidy() {
         let _expectedGroupDiscountPercent = await icoPoolParty.expectedGroupDiscountPercent();
         smartLog("expectedGroupDiscountPercent [" + _expectedGroupDiscountPercent + "%]");
