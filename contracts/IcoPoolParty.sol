@@ -34,7 +34,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
     uint256 public expectedGroupTokenPrice;
     uint256 public actualGroupDiscountPercent;
     uint256 public totalPoolInvestments;
-    uint256 public totalTokensReceived;
+    uint256 public poolTokenBalance;
     uint256 public poolParticipants;
     uint256 public reviewPeriodStart;
     uint256 public balanceRemainingSnapshot;
@@ -43,6 +43,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
     uint256 public minOraclizeFee;
     uint256 public dueDiligenceDuration;
     uint256 public poolSubsidyAmount;
+    uint256 public allTokensClaimed;
 
     address public poolPartyOwnerAddress;
     address public destinationAddress;
@@ -76,13 +77,15 @@ contract IcoPoolParty is Ownable, usingOraclize {
 
     struct Investor {
         uint256 investmentAmount;
-        uint256 tokensDue;
+        uint256 lastAmountTokensClaimed;
         uint256 percentageContribution;
         uint256 arrayIndex;
         bool hasClaimedRefund;
         bool isActive;
         uint256 refundAmount;
         bool hasClaimedTokens;
+        uint256 totalTokensClaimed;
+        uint256 numberOfTokenClaims;
     }
 
     enum Status {Open, WaterMarkReached, DueDiligence, InReview, Claim}
@@ -466,16 +469,16 @@ contract IcoPoolParty is Ownable, usingOraclize {
         onlyAuthorizedAddress
     {
         require(poolStatus == Status.InReview);
-        require(totalTokensReceived == 0);
+        require(poolTokenBalance == 0);
 
         if (hashedClaimFunctionName != keccak256("N/A")) {
             require(destinationAddress.call(bytes4(hashedClaimFunctionName)));
         }
 
-        totalTokensReceived = tokenAddress.balanceOf(address(this));
-        if (totalTokensReceived > 0) {
+        poolTokenBalance = tokenAddress.balanceOf(address(this));
+        if (poolTokenBalance > 0) {
             poolStatus = Status.Claim;
-            ClaimedTokensFromIco(address(this), totalTokensReceived, now);
+            ClaimedTokensFromIco(address(this), poolTokenBalance, now);
         }
     }
 
@@ -488,7 +491,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         onlyAuthorizedAddress
     {
         require(poolStatus == Status.InReview);
-        require(totalTokensReceived == 0);
+        require(poolTokenBalance == 0);
 
         require(destinationAddress.call(bytes4(hashedRefundFunctionName)));
 
@@ -508,16 +511,27 @@ contract IcoPoolParty is Ownable, usingOraclize {
     function claimTokens() public {
         Investor storage _investor = investors[msg.sender];
         require(poolStatus == Status.Claim);
-        require(totalTokensReceived > 0);
         require(_investor.isActive);
         require(_investor.investmentAmount > 0);
-        require(!_investor.hasClaimedTokens);
 
+        var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
+        if (_investor.percentageContribution == 0) {
+            _investor.percentageContribution = _percentageContribution;
+            _investor.refundAmount = _refundAmount;
+        }
+
+        poolTokenBalance = tokenAddress.balanceOf(address(this)); //Get the latest token balance for the pool
+
+        require(_tokensDue > 0); //User has to have tokens due to proceed
+
+        _investor.lastAmountTokensClaimed = _tokensDue;
+        _investor.totalTokensClaimed = _investor.totalTokensClaimed.add(_tokensDue); //Increment number of tokens claimed by tokens due for this call
         _investor.hasClaimedTokens = true;
-        calculateAndStoreDerivedValues(msg.sender);
+        _investor.numberOfTokenClaims = _investor.numberOfTokenClaims.add(1);
+        allTokensClaimed = allTokensClaimed.add(_tokensDue); //Increment allTokensClaimed by tokens due
 
-        TokensClaimed(msg.sender, _investor.investmentAmount, _investor.tokensDue, now);
-        tokenAddress.transfer(msg.sender, _investor.tokensDue);
+        TokensClaimed(msg.sender, _investor.investmentAmount, _tokensDue, now);
+        tokenAddress.transfer(msg.sender, _tokensDue); //Transfer the tokens to the user
     }
 
     /**
@@ -531,8 +545,17 @@ contract IcoPoolParty is Ownable, usingOraclize {
         require(_investor.investmentAmount > 0);
         require(!_investor.hasClaimedRefund);
 
+        //TODO: Should we allow multiple refunds too?
         _investor.hasClaimedRefund = true;
-        calculateAndStoreDerivedValues(msg.sender);
+
+        var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
+
+        if (_investor.percentageContribution == 0) {
+            _investor.percentageContribution = _percentageContribution;
+            _investor.refundAmount = _refundAmount;
+        }
+
+        require(_investor.refundAmount > 0);
 
         RefundClaimed(msg.sender, _investor.refundAmount, now);
         msg.sender.transfer(_investor.refundAmount);
@@ -572,7 +595,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         if (poolStatus != Status.Claim) {return (0, 0, 0, false, false);}
 
         Investor storage _investor = investors[_user];
-        var (_percentageContribution, _refundAmount, _tokensDue) = calculateDerivedValues(_investor.investmentAmount);
+        var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(_user);
         return (_percentageContribution, _refundAmount, _tokensDue, _investor.hasClaimedRefund, _investor.hasClaimedTokens);
     }
 
@@ -590,32 +613,17 @@ contract IcoPoolParty is Ownable, usingOraclize {
     /* INTERNAL FUNCTIONS */
     /**********************/
 
-    /**
-     * @dev Internal function to store the calculated percentage contribution, refund amount and tokens due of a participant - values stored in the investor struct
-     * @param _user The user to calculate the values for
-     */
-    function calculateAndStoreDerivedValues(address _user) internal {
-        Investor storage _investor = investors[_user];
-
-        if (_investor.percentageContribution == 0) {
-            var (_percentageContribution, _refundAmount, _tokensDue) = calculateDerivedValues(_investor.investmentAmount);
-            _investor.percentageContribution = _percentageContribution;
-            _investor.refundAmount = _refundAmount;
-            _investor.tokensDue = _tokensDue;
-        }
-    }
-
-    /**
-     * @dev Internal function that calculates a participants contribution percentage, refund amount and tokens due based on the amount originally contributed and total pool size
-     * @param _investmentAmount Amount used to do the calculation
-     */
-    function calculateDerivedValues(uint256 _investmentAmount)
+    function calculateParticipationAmounts(address _user)
         internal
+        view
         returns (uint256, uint256, uint256)
     {
-        uint256 _percentageContribution = _investmentAmount.mul(100).mul(DECIMAL_PRECISION).div(totalPoolInvestments);
+        Investor storage _investor = investors[_user];
+        uint256 _poolTokenBalance = tokenAddress.balanceOf(address(this));
+        uint256 _lifetimeTokensReceived = _poolTokenBalance + allTokensClaimed;
+        uint256 _percentageContribution = _investor.investmentAmount.mul(100).mul(DECIMAL_PRECISION).div(totalPoolInvestments);
         uint256 _refundAmount = balanceRemainingSnapshot.mul(_percentageContribution).div(100).div(DECIMAL_PRECISION);
-        uint256 _tokensDue = totalTokensReceived.mul(_percentageContribution).div(100).div(DECIMAL_PRECISION);
+        uint256 _tokensDue = _lifetimeTokensReceived.mul(_percentageContribution).div(100).div(DECIMAL_PRECISION).sub(_investor.totalTokensClaimed);
 
         return (_percentageContribution, _refundAmount, _tokensDue);
     }

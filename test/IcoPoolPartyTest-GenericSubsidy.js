@@ -157,7 +157,7 @@ contract('Generic Pool Party ICO', function (accounts) {
         });
 
         it("Should claim tokens from ICO", async () => {
-            smartLog("Tokens Received [" + await icoPoolPartyContract.totalTokensReceived() + "]");
+            smartLog("Tokens Received [" + await icoPoolPartyContract.poolTokenBalance() + "]");
             smartLog("Pool Party token balance [" + await genericTokenContract.balanceOf(icoPoolPartyContract.address) + "]");
         });
 
@@ -173,7 +173,7 @@ contract('Generic Pool Party ICO', function (accounts) {
 
         it("Should claim tokens", async () => {
             smartLog("Token Decimals [" + await genericTokenContract.decimals() + "]");
-            smartLog("Total tokens received from sale [" + await icoPoolPartyContract.totalTokensReceived() + "]");
+            smartLog("Total tokens received from sale [" + await icoPoolPartyContract.poolTokenBalance() + "]");
             smartLog("Account 0 eth investment [" + web3.fromWei((await icoPoolPartyContract.investors(investor1))[0]) + "]");
 
             await icoPoolPartyContract.claimTokens({from: investor1});
