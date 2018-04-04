@@ -208,10 +208,10 @@ contract('Pool Party ICO', function (accounts) {
         it("Should claim tokens from ICO", async () => {
             await tokenSaleContract.updateLatestSaleState({from: accounts[6]});
             smartLog("Sale State is (should be 5) [" + await tokenSaleContract.state() + "]");
-            smartLog("Tokens received [" + await icoPoolPartyContract.totalTokensReceived() + "]");
+            smartLog("Tokens received [" + await icoPoolPartyContract.poolTokenBalance() + "]");
 
             await icoPoolPartyContract.claimTokensFromIco({from: accounts[7]});
-            smartLog("Tokens Received [" + await icoPoolPartyContract.totalTokensReceived() + "]");
+            smartLog("Tokens Received [" + await icoPoolPartyContract.poolTokenBalance() + "]");
             smartLog("Pool Party token balance [" + await dealTokenContract.balanceOf(icoPoolPartyContract.address) + "]");
         });
 
@@ -225,7 +225,7 @@ contract('Pool Party ICO', function (accounts) {
         });
 
         it("Should claim tokens", async () => {
-            smartLog("Total tokens received from sale [" + await icoPoolPartyContract.totalTokensReceived() + "]");
+            smartLog("Total tokens received from sale [" + await icoPoolPartyContract.poolTokenBalance() + "]");
             smartLog("Account 0 eth investment [" + web3.fromWei((await icoPoolPartyContract.investors(accounts[0]))[0]) + "]");
 
             await icoPoolPartyContract.claimTokens({from: accounts[0]});

@@ -63,18 +63,18 @@ contract('IcoPoolParty', (accounts) => {
         });
 
         it('should claim tokens from ICO', async () => {
-            let contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            let contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Tokens received should be 0");
 
             await icoPoolParty.claimTokensFromIco({from: _saleOwner});
-            contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.isAbove(contractTokenReceived, 0, "Should have received tokens");
             assert.equal(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
         });
 
         it('should attempt to claim tokens once tokens are already claimed', async () => {
             await icoPoolParty.claimTokensFromIco({from: _saleOwner});
-            const contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            const contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.isAbove(contractTokenReceived, 0, "Should have received tokens");
             assert.equal(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
 
@@ -84,7 +84,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to claim tokens with an unauthorized account', async () => {
             await expectThrow(icoPoolParty.claimTokensFromIco({from: _investor4}));
-            const contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            const contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Should have 0 tokens");
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
@@ -99,7 +99,7 @@ contract('IcoPoolParty', (accounts) => {
             const fee = await calculateFee();
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
-            let contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            let contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.isAbove(contractTokenReceived, 0, "Should have received tokens");
         });
     });
@@ -117,18 +117,18 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
 
-            let contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            let contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Tokens received should be 0");
 
             await icoPoolParty.claimTokensFromIco({from: _saleOwner});
-            contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Should have received 0 tokens");
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
 
         it('should attempt to claim tokens in incorrect state', async () => {
             await expectThrow(icoPoolParty.claimTokensFromIco({from: _saleOwner}));
-            const contractTokenReceived = await icoPoolParty.totalTokensReceived();
+            const contractTokenReceived = await icoPoolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Should have received 0 tokens");
             assert.notEqual(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
         });
@@ -190,7 +190,7 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
-            assert.equal(await icoPoolParty.totalTokensReceived(), 0, "Should have received tokens");
+            assert.equal(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "], total investment balance [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
             assert.isBelow((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Contract balance too high after release funds");
             await icoPoolParty.claimRefundFromIco({from: _saleOwner});
@@ -206,7 +206,7 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
-            assert.equal(await icoPoolParty.totalTokensReceived(), 0, "Should have received tokens");
+            assert.equal(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "], total investment balance [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
             assert.isBelow((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Contract balance too high after release funds");
             await icoPoolParty.claimRefundFromIco({from: _saleOwner});

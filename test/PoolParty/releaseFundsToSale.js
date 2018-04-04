@@ -135,7 +135,7 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
-            assert.isAbove(await icoPoolParty.totalTokensReceived(), 0, "Should have received tokens");
+            assert.isAbove(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
             assert.equal(web3.eth.getBalance(_deployer), parseInt(ownerSnapshotBalance) + parseInt(fee), "Correct fee not transferred");
         });
 
@@ -198,7 +198,7 @@ contract('IcoPoolParty', (accounts) => {
 
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
-            assert.isAbove(await icoPoolParty.totalTokensReceived(), 0, "Should have received tokens");
+            assert.isAbove(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
         });
     });
 

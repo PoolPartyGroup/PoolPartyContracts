@@ -240,9 +240,9 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         
             let totalTokensExpected = (await icoPoolPartyContract.totalPoolInvestments()) * Math.pow(10,18) / (await icoPoolPartyContract.groupEthPricePerToken())
             smartLog("EXPECTED TOKENS: " + totalTokensExpected);
-            //totalTokensReceived = tokenAddress.balanceOf(address(this));
+            //poolTokenBalance = tokenAddress.balanceOf(address(this));
             //uint256 _expectedTokenBalance = totalPoolInvestments.mul(tokenPrecision).div(groupEthPricePerToken);
-            //require(totalTokensReceived >= _expectedTokenBalance);
+            //require(poolTokenBalance >= _expectedTokenBalance);
 
             await ReleaseFundsToSale();
             
