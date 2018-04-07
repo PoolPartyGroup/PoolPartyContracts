@@ -110,6 +110,8 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         async function ReleaseFundsToSale(){
             await sleep(3500);
+
+            await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
             
             smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
@@ -143,7 +145,9 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             await CompleteConfiguration();
             
             await sleep(3500);
-            
+
+            await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
+
             smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
             let theState = await icoPoolPartyContract.poolStatus();
@@ -470,9 +474,5 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    function power(a, b) {
-        return a**b;
     }
 });

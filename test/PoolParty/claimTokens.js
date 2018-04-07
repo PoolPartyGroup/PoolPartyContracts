@@ -73,6 +73,7 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
@@ -159,6 +160,7 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 400000, value: (subsidy + fee)});

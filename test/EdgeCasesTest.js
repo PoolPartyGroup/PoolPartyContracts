@@ -104,6 +104,8 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         it("Have a 3rd party try to release pool's funds...", async () => {            
             await sleep(3500);
+
+            await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
             
             smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
@@ -142,6 +144,8 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         it("should release funds and compare balances...", async () => {
             await sleep(3500);
+
+            await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
             
             smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
@@ -238,9 +242,5 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    function power(a, b) {
-        return a**b;
     }
 });

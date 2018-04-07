@@ -53,6 +53,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should release funds to subsidized sale', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
@@ -65,12 +66,12 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to release funds using unauthorized account', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
 
             await expectThrow(icoPoolParty.releaseFundsToSale({from: _investor3, gas: 300000, value: (subsidy + fee)}));
             assert.equal(web3.eth.getBalance(customSale.address), 0, "Sale balance should be 0");
-            assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
         });
 
         it('should attempt to release funds before due diligence has passed', async () => {
@@ -84,32 +85,33 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to release funds without sending any ether', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
 
             await expectThrow(icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000}));
             assert.equal(web3.eth.getBalance(customSale.address), 0, "Sale balance should be 0");
-            assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
         });
 
         it('should attempt to release funds only sending subsidy', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const subsidy = await calculateSubsidy();
 
             await expectThrow(icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: subsidy}));
             assert.equal(web3.eth.getBalance(customSale.address), 0, "Sale balance should be 0");
-            assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
         });
 
         it('should attempt to release funds only sending fee', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const fee = await calculateFee();
 
             await expectThrow(icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: fee}));
             assert.equal(web3.eth.getBalance(customSale.address), 0, "Sale balance should be 0");
-            assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
         });
 
         it('should attempt to leave pool when funds already released', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (fee + subsidy)});
@@ -128,6 +130,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should release funds to subsidized sale', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
@@ -141,6 +144,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to release funds in review state when the total pool size is 0', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             await icoPoolParty.leavePool({from: _investor4});
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
             await icoPoolParty.leavePool({from: _investor2});
@@ -165,6 +169,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should release funds to non-subsidized sale', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const fee = await calculateFee();
 
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: fee});
@@ -173,6 +178,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to release funds to non-subsidized sale with incorrect fee', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const fee = await calculateFee();
 
             await expectThrow(icoPoolParty.releaseFundsToSale({
@@ -193,6 +199,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should release funds to subsidized sale and get tokens', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
 
@@ -221,6 +228,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should release funds to sale with 0% fee', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
             const subsidy = await calculateSubsidy();
             const fee = await calculateFee();
@@ -253,6 +261,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should release funds to sale with waived fee', async () => {
             assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
             const subsidy = await calculateSubsidy();
 
@@ -270,6 +279,7 @@ contract('IcoPoolParty', (accounts) => {
             assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
 
             await sleep(DUE_DILIGENCE_DURATION);
+            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
             const subsidy = await calculateSubsidy();
 

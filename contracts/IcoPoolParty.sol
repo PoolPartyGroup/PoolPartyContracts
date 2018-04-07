@@ -122,20 +122,6 @@ contract IcoPoolParty is Ownable, usingOraclize {
     }
 
     /**
-     * @dev Start the timer to once the sale is configured - this gives time for investors to review where their funds will go before they are released to the configured address
-     */
-    modifier timedTransition {
-        if (
-            poolStatus == Status.DueDiligence &&
-            reviewPeriodStart != 0 &&
-            now >= reviewPeriodStart + dueDiligenceDuration
-        ) {
-            poolStatus = Status.InReview;
-        }
-        _;
-    }
-
-    /**
      * @dev Only allow sale owner to execute function
      */
     modifier onlyAuthorizedAddress {
@@ -197,7 +183,6 @@ contract IcoPoolParty is Ownable, usingOraclize {
     function addFundsToPool()
         public
         assessWaterMark
-        timedTransition
         payable
     {
         require( //Can only add funds until the 7 day timer is up - timer starts when the "sale" is configured
@@ -231,7 +216,6 @@ contract IcoPoolParty is Ownable, usingOraclize {
     function leavePool()
         public
         assessWaterMark
-        timedTransition
     {
         Investor storage _investor = investors[msg.sender];
         require(_investor.isActive);
@@ -382,7 +366,6 @@ contract IcoPoolParty is Ownable, usingOraclize {
      */
     function kickUser(address _userToKick, KickReason _reason)
         public
-        timedTransition
         onlyAuthorizedAddress
     {
         require(poolStatus == Status.InReview);
@@ -416,7 +399,6 @@ contract IcoPoolParty is Ownable, usingOraclize {
      */
     function releaseFundsToSale()
         public
-        timedTransition
         onlyAuthorizedAddress
         payable
     {
@@ -545,7 +527,6 @@ contract IcoPoolParty is Ownable, usingOraclize {
         require(_investor.investmentAmount > 0);
         require(!_investor.hasClaimedRefund);
 
-        //TODO: Should we allow multiple refunds too?
         _investor.hasClaimedRefund = true;
 
         var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
@@ -559,6 +540,20 @@ contract IcoPoolParty is Ownable, usingOraclize {
 
         RefundClaimed(msg.sender, _investor.refundAmount, now);
         msg.sender.transfer(_investor.refundAmount);
+    }
+
+    /**
+     * @dev - Set the state to review
+     */
+    function startInReviewPeriod()
+        public
+        onlyAuthorizedAddress
+    {
+        require(poolStatus == Status.DueDiligence);
+        require(reviewPeriodStart != 0);
+        require(now >= reviewPeriodStart + dueDiligenceDuration);
+
+        poolStatus = Status.InReview;
     }
 
     /**
