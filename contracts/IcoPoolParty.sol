@@ -167,7 +167,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         reviewPeriodStart = 0;
         feeWaived = false;
 
-        OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475); //TODO: ONLY USED FOR LOCAL TESTING
+        //OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475); //TODO: ONLY USED FOR LOCAL TESTING
         PoolCreated(icoUrl, now);
     }
 
@@ -543,7 +543,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
     }
 
     /**
-     * @dev - Set the state to review
+     * @dev - Set the pool state to in review. Only allowed by authorized address
      */
     function startInReviewPeriod()
         public
