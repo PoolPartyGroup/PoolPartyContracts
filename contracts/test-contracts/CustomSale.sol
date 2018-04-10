@@ -38,4 +38,8 @@ contract CustomSale is Ownable {
     function mintTokens(address _recipient, uint256 _amount) public {
         token.mint(_recipient, _amount);
     }
+
+    function withdrawFunds() public onlyOwner {
+        msg.sender.transfer(this.balance);
+    }
 }

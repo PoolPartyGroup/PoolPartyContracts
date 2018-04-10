@@ -34,8 +34,8 @@ const InvestorStruct = {
     hasClaimedRefund: 4,
     isActive: 5,
     refundAmount: 6,
-    hasClaimedTokens: 7,
-    totalTokensClaimed: 8
+    totalTokensClaimed: 7,
+    totalNumberOfClaims: 8
 };
 const Contributions = {
     percentageContribution: 0,

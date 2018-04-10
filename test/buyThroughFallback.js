@@ -30,6 +30,20 @@ contract('Custom Sale', function (accounts) {
             smartLog("Tokens received [" + await genericToken.balanceOf(_investor2) + "]", true);
         });
 
+        it("should withdraw funds", async () => {
+            smartLog("Tokens balance [" + await genericToken.balanceOf(_investor2) + "]", true);
+            await customSale.buy({from: _investor2, value: web3.toWei("1")});
+            smartLog("Tokens received [" + await genericToken.balanceOf(_investor2) + "]", true);
+
+            await customSale.buy({from: _investor1, value: web3.toWei("20")});
+            smartLog("Sale balance [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]", true);
+            smartLog("Deployer balance [" + web3.fromWei((web3.eth.getBalance(_deployer))) + "]", true);
+            await expectThrow(customSale.withdrawFunds({from: _investor2}));
+            await customSale.withdrawFunds({from: _deployer});
+            smartLog("Sale balance [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]", true);
+            smartLog("Deployer balance [" + web3.fromWei((web3.eth.getBalance(_deployer))) + "]", true);
+        });
+
     });
 
     /***********************************************************/

@@ -253,12 +253,12 @@ contract('IcoPoolParty', (accounts) => {
                 value: web3.toWei("0.005")
             });
 
-            await icoPoolParty.toggleFee({from: _deployer});
             await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
         });
 
         it('should release funds to sale with waived fee', async () => {
+            await icoPoolParty.waiveFee({from: _deployer});
             assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
             await sleep(DUE_DILIGENCE_DURATION);
             await icoPoolParty.startInReviewPeriod({from: _saleOwner});
@@ -271,22 +271,10 @@ contract('IcoPoolParty', (accounts) => {
             assert.equal(web3.eth.getBalance(_deployer), parseInt(ownerSnapshotBalance), "There should be no fee");
         });
 
-        it('should toggle fee a few times and then release funds to sale with waived fee', async () => {
-            assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
-            await icoPoolParty.toggleFee({from: _deployer});
+        it('should attempt to waive fee with incorrect account', async () => {
+            assert.equal(await icoPoolParty.feeWaived(), false, "Fee should not be waived by default");
+            await expectThrow(icoPoolParty.waiveFee({from: _investor2}));
             assert.equal(await icoPoolParty.feeWaived(), false, "Fee should not have been waived");
-            await icoPoolParty.toggleFee({from: _deployer});
-            assert.equal(await icoPoolParty.feeWaived(), true, "Fee should have been waived");
-
-            await sleep(DUE_DILIGENCE_DURATION);
-            await icoPoolParty.startInReviewPeriod({from: _saleOwner});
-            const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
-            const subsidy = await calculateSubsidy();
-
-            await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy)});
-            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
-            assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
-            assert.equal(web3.eth.getBalance(_deployer), parseInt(ownerSnapshotBalance), "There should be no fee");
         });
     });
 

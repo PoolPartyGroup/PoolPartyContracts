@@ -10,13 +10,18 @@ module.exports = function (deployer, network, accounts) {
     deployer.deploy(UrlBuilder);
 
     deployer.link(UrlBuilder, IcoPoolPartyFactory);
-    deployer.link(UrlBuilder, OraclizeTest);
 
-    deployer.deploy(OraclizeTest);
-    deployer.deploy(IcoPoolPartyFactory, accounts[6]).then(async () => {
+    if (network == "develop" || network == "development") {
+        deployer.link(UrlBuilder, OraclizeTest);
+        deployer.deploy(OraclizeTest);
+    }
+
+    deployer.deploy(IcoPoolPartyFactory, accounts[0]).then(async () => {
         utils.addKeyToDappConfig("IcoPoolPartyFactoryAddress", IcoPoolPartyFactory.address);
-        const factory = await IcoPoolPartyFactory.deployed();
-        return factory.setDueDiligenceDuration(3, {from: accounts[0]});
+        if (network == "develop" || network == "development") {
+            const factory = await IcoPoolPartyFactory.deployed();
+            return factory.setDueDiligenceDuration(3, {from: accounts[0]});
+        }
     });
 };
 

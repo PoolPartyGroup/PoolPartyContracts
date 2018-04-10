@@ -33,6 +33,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         //CREATE A NEW POOL
         smartLog("Creating new pool...", true);
+        await icoPoolPartyFactoryContract.setDueDiligenceDuration(3);
         await icoPoolPartyFactoryContract.setWaterMark(web3.toWei("10"));
         await icoPoolPartyFactoryContract.createNewPoolParty("testDomain" + domainIndex + ".io", {from: deployer});
         const poolAddress = await icoPoolPartyFactoryContract.partyList(domainIndex);
@@ -106,7 +107,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             await sleep(3500);
 
             await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
-            
+
             smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
             let theState = await icoPoolPartyContract.poolStatus();
@@ -138,7 +139,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
 
             let tokensDue0 = (await icoPoolPartyContract.getContributionsDue(investor1))[2];
-            smartLog("Account 0 has [" + tokensDue0 + "] tokens due");            
+            smartLog("Account 0 has [" + tokensDue0 + "] tokens due");
         });
 
 
