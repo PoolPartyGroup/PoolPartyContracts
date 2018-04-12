@@ -1,4 +1,8 @@
 /* global artifacts */
+import {
+    smartLog,
+    sleep
+} from './helpers/utils';
 
 const oraclize = artifacts.require('./OracalizeTest');
 let oraclizeContract;
@@ -32,14 +36,4 @@ contract('Oraclize Test', function (accounts) {
         });
 
     });
-
-    function smartLog(message, override) {
-        let verbose = false;
-        if (verbose || override)
-            console.log(message);
-    }
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 });

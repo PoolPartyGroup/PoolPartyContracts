@@ -1,49 +1,28 @@
 import expectThrow from './../helpers/expectThrow';
-
-const poolPartyFactoryArtifact = artifacts.require('./IcoPoolPartyFactory');
-const poolPartyArtifact = artifacts.require('./IcoPoolParty');
-const genericTokenArtifact = artifacts.require('./test-contracts/GenericToken');
-const customSaleArtifact = artifacts.require('./test-contracts/CustomSale');
-
-const foregroundTokenSaleArtifact = artifacts.require('./ForegroundTokenSale');
-const dealTokenArtifact = artifacts.require('./DealToken');
+import {
+    smartLog,
+    sleep,
+    calculateFee,
+    calculateSubsidy,
+    Status,
+    Contributions,
+    InvestorStruct,
+    DUE_DILIGENCE_DURATION,
+    customSaleArtifact,
+    dealTokenArtifact,
+    foregroundTokenSaleArtifact,
+    genericTokenArtifact,
+    poolPartyArtifact,
+    poolPartyFactoryArtifact
+} from './../helpers/utils';
 
 let foregroundTokenSale;
 let dealToken;
-
-const DUE_DILIGENCE_DURATION = 3000;
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
 let customSale;
-
-const Status = {
-    Open: 0,
-    WaterMarkReached: 1,
-    DueDiligence: 2,
-    InReview: 3,
-    Claim: 4,
-    Refunding: 5
-};
-const InvestorStruct = {
-    investmentAmount: 0,
-    lastAmountTokensClaimed: 1,
-    percentageContribution: 2,
-    arrayIndex: 3,
-    hasClaimedRefund: 4,
-    isActive: 5,
-    refundAmount: 6,
-    totalTokensClaimed: 7,
-    totalNumberOfClaims: 8
-};
-const Contributions = {
-    percentageContribution: 0,
-    refundAmount: 1,
-    tokensDue: 2,
-    hasClaimedRefund: 3,
-    hasClaimedTokens: 4
-}
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _foregroundSaleAddresses] = accounts;
@@ -74,8 +53,8 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await icoPoolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = await calculateSubsidy();
-            const fee = await calculateFee();
+            const subsidy = calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments());
+            const fee = calculateFee(await icoPoolParty.feePercentage(), await icoPoolParty.totalPoolInvestments());
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await icoPoolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
             assert.isAbove(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
@@ -144,6 +123,7 @@ contract('IcoPoolParty', (accounts) => {
         });
 
         it('should attempt to claim from account who is not participant', async () => {
+            smartLog("PoolParty [" + icoPoolParty.address + "]", true);
             await expectThrow(icoPoolParty.claimTokens({from: _nonInvestor}));
             assert.equal((await genericToken.balanceOf(_nonInvestor)).toNumber(), 0, "Incorrect number of tokens received");
         });
@@ -161,8 +141,8 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await icoPoolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = await calculateSubsidy();
-            const fee = await calculateFee();
+            const subsidy = calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments());
+            const fee = calculateFee(await icoPoolParty.feePercentage(), await icoPoolParty.totalPoolInvestments());
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 400000, value: (subsidy + fee)});
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
@@ -204,43 +184,6 @@ contract('IcoPoolParty', (accounts) => {
             const investor4PreviousTokensClaimed = (await icoPoolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
             assert.equal(investor4PreviousTokensClaimed, 0, "Contribution amounts should still reflect 0");
         });
-
     });
-
-
-    async function calculateSubsidy() {
-        let _expectedGroupDiscountPercent = await icoPoolParty.expectedGroupDiscountPercent();
-        smartLog("expectedGroupDiscountPercent [" + _expectedGroupDiscountPercent + "%]");
-        let _actualGroupDiscountPercent = await icoPoolParty.actualGroupDiscountPercent();
-        smartLog("actualGroupDiscountPercent [" + _actualGroupDiscountPercent + "%]");
-        let _expectedGroupTokenPrice = await icoPoolParty.expectedGroupTokenPrice();
-        smartLog("expectedGroupTokenPrice [" + web3.fromWei(_expectedGroupTokenPrice) + "]");
-        let _totalPoolInvestments = await icoPoolParty.totalPoolInvestments();
-        smartLog("totalPoolInvestments [" + web3.fromWei(_totalPoolInvestments) + "]");
-
-        let _groupContPercent = 100 - _actualGroupDiscountPercent;
-        let _amountToRelease = _totalPoolInvestments * 100 / _groupContPercent;
-
-        smartLog("amountToRelease [" + web3.fromWei(_amountToRelease) + "]");
-
-        return _amountToRelease - _totalPoolInvestments;
-    }
-
-    async function calculateFee() {
-        const feePercent = await icoPoolParty.feePercentage();
-        const totalPoolInvestment = await icoPoolParty.totalPoolInvestments();
-        return totalPoolInvestment * feePercent / 100;
-    }
-
-    function sleep(_ms) {
-        return new Promise(resolve => setTimeout(resolve, _ms));
-    }
-
-    function smartLog(message, override) {
-        let verbose = false;
-        if (verbose || override)
-            console.log(message);
-    }
-
 });
 

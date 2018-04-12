@@ -1,7 +1,9 @@
 import expectThrow from './helpers/expectThrow';
-
-const CustomSaleArtifact = artifacts.require('./test-contracts/CustomSale');
-const genericTokenArtifact = artifacts.require('./test-contracts/GenericToken');
+import {
+    smartLog,
+    customSaleArtifact,
+    genericTokenArtifact,
+} from './helpers/utils';
 
 let customSale;
 let genericToken;
@@ -15,7 +17,7 @@ contract('Custom Sale', function (accounts) {
 
         beforeEach(async () => {
             genericToken = await genericTokenArtifact.deployed();
-            customSale = await CustomSaleArtifact.deployed();
+            customSale = await customSaleArtifact.deployed();
         });
 
         it("should buy tokens through fallback", async () => {
@@ -45,18 +47,4 @@ contract('Custom Sale', function (accounts) {
         });
 
     });
-
-    /***********************************************************/
-    /*                    HELPER FUNCTIONS                     */
-    /***********************************************************/
-
-    function smartLog(message, override) {
-        let verbose = false;
-        if (verbose || override)
-            console.log(message);
-    }
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 });

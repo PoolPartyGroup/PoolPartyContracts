@@ -1,25 +1,19 @@
 import expectThrow from './../helpers/expectThrow';
+import {
+    sleep,
+    Status,
+    DUE_DILIGENCE_DURATION,
+    customSaleArtifact,
+    genericTokenArtifact,
+    poolPartyArtifact,
+    poolPartyFactoryArtifact
+} from './../helpers/utils';
 
-const poolPartyFactoryArtifact = artifacts.require('./IcoPoolPartyFactory');
-const poolPartyArtifact = artifacts.require('./IcoPoolParty');
-const genericTokenArtifact = artifacts.require('./test-contracts/GenericToken');
-const customSaleArtifact = artifacts.require('./test-contracts/CustomSale');
-
-const DUE_DILIGENCE_DURATION = 3000;
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
 let customSale;
-
-const Status = {
-    Open: 0,
-    WaterMarkReached: 1,
-    DueDiligence: 2,
-    InReview: 3,
-    Claim: 4,
-    Refunding: 5
-};
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _foregroundSaleAddresses] = accounts;
@@ -85,16 +79,5 @@ contract('IcoPoolParty', (accounts) => {
             assert.notEqual(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
     });
-
-    function sleep(_ms) {
-        return new Promise(resolve => setTimeout(resolve, _ms));
-    }
-
-    function smartLog(message, override) {
-        let verbose = false;
-        if (verbose || override)
-            console.log(message);
-    }
-
 });
 

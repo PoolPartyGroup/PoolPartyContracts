@@ -1,14 +1,10 @@
 import expectThrow from './../helpers/expectThrow';
-
-const poolPartyFactoryArtifact = artifacts.require('./IcoPoolPartyFactory');
-const poolPartyArtifact = artifacts.require('./IcoPoolParty');
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const FactoryDefaultConfig = {
-    FeePercentage: 6,
-    WithdrawlFee: web3.toWei("0.0015"),
-    GroupDiscountPercent: 15,
-    WaterMark: web3.toWei("15")
-};
+import {
+    FactoryDefaultConfig,
+    ZERO_ADDRESS,
+    poolPartyArtifact,
+    poolPartyFactoryArtifact
+} from './../helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;

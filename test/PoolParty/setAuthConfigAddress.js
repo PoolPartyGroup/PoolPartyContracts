@@ -1,19 +1,13 @@
 import expectThrow from './../helpers/expectThrow';
-
-const poolPartyFactoryArtifact = artifacts.require('./IcoPoolPartyFactory');
-const poolPartyArtifact = artifacts.require('./IcoPoolParty');
+import {
+    sleep,
+    Status,
+    poolPartyArtifact,
+    poolPartyFactoryArtifact
+} from './../helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;
-
-const Status = {
-    Open: 0,
-    WaterMarkReached: 1,
-    DueDiligence: 2,
-    InReview: 3,
-    Claim: 4,
-    Refunding: 5
-};
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _saleOwner] = accounts;
@@ -79,9 +73,5 @@ contract('IcoPoolParty', (accounts) => {
         });
 
     });
-
-    function sleep(_ms) {
-        return new Promise(resolve => setTimeout(resolve, _ms));
-    }
 });
 

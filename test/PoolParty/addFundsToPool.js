@@ -1,29 +1,21 @@
 import expectThrow from './../helpers/expectThrow';
-
-const poolPartyFactoryArtifact = artifacts.require('./IcoPoolPartyFactory');
-const poolPartyArtifact = artifacts.require('./IcoPoolParty');
-const genericTokenArtifact = artifacts.require('./test-contracts/GenericToken');
-
-const MIN_CONT_AMOUNT = web3.toWei("0.01");
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const DUE_DILIGENCE_DURATION = 2000;
+import {
+    sleep,
+    Status,
+    KickReason,
+    DUE_DILIGENCE_DURATION,
+    ZERO_ADDRESS,
+    MIN_CONT_AMOUNT,
+    genericTokenArtifact,
+    poolPartyArtifact,
+    poolPartyFactoryArtifact
+} from './../helpers/utils';
 
 const expectedDiscountPercentage = 15;
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
-
-const Status = {
-    Open: 0,
-    WaterMarkReached: 1,
-    DueDiligence: 2,
-    InReview: 3,
-    Claim: 4,
-    Refunding: 5
-};
-
-const KickReason = {Other: 0, Kyc: 1};
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _tokenAddress] = accounts;
@@ -542,9 +534,5 @@ contract('IcoPoolParty', (accounts) => {
         });
 
     });
-
-    function sleep(_ms) {
-        return new Promise(resolve => setTimeout(resolve, _ms));
-    }
 });
 

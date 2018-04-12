@@ -1,7 +1,7 @@
 var Migrations = artifacts.require("./Migrations.sol");
-const utils = require("../test/utils.js");
+const dappConfig = require("../test/helpers/dappConfig.js");
 
 module.exports = function (deployer, network) {
-    utils.addKeyToDappConfig("Network", network);
+    dappConfig.addKeyToDappConfig("Network", network);
     deployer.deploy(Migrations);
 };

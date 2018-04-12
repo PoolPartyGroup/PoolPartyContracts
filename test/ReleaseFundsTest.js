@@ -1,83 +1,87 @@
 import expectThrow from './helpers/expectThrow';
+import {
+    smartLog,
+    sleep,
+    calculateSubsidy,
+    Status,
+    InvestorStruct,
+    Contributions,
+    DUE_DILIGENCE_DURATION,
+    customSaleArtifact,
+    genericTokenArtifact,
+    poolPartyArtifact,
+    poolPartyFactoryArtifact
+} from './helpers/utils';
 
-let icoPoolPartyFactory = artifacts.require('./IcoPoolPartyFactory');
-let icoPoolParty = artifacts.require('./IcoPoolParty');
-let customSale = artifacts.require('./test-contracts/CustomSale');
-let genericToken = artifacts.require('./test-contracts/GenericToken');
-
-let icoPoolPartyFactoryContract;
-let icoPoolPartyContract;
-let customSaleContract;
-let genericTokenContract;
-
-const Status = {Open: 0, WaterMarkReached: 1, DueDiligence: 2, InReview: 3, Claim: 4, Refunding: 5};
-
-
+let icoPoolPartyFactory;
+let icoPoolParty;
+let customSale;
+let genericToken;
 
 contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
     const [deployer, investor1, investor2, investor3, investor4, investor5, investor6, investor7] = accounts;
 
-    var domainIndex = 0;
+    let domainIndex = 0;
     beforeEach(async () => {
-        icoPoolPartyFactoryContract = await icoPoolPartyFactory.deployed();
-        smartLog("Pool Party Factory Address [" + await icoPoolPartyFactoryContract.address + "]");
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.deployed();
+        smartLog("Pool Party Factory Address [" + await icoPoolPartyFactory.address + "]");
 
 
-        genericTokenContract = await genericToken.new({from: deployer});
-        customSaleContract = await customSale.new(web3.toWei("0.05"), genericTokenContract.address, {from: deployer});
-        await genericTokenContract.transferOwnership(customSaleContract.address, {from: deployer});
+        genericToken = await genericTokenArtifact.new({from: deployer});
+        customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: deployer});
+        await genericToken.transferOwnership(customSale.address, {from: deployer});
 
-        //genericTokenContract = await genericToken.deployed();
-        //customSaleContract = await CustomSale.deployed();
+        //genericToken = await genericTokenArtifact.deployed();
+        //customSale = await CustomSale.deployed();
 
         //CREATE A NEW POOL
         smartLog("Creating new pool...", true);
-        await icoPoolPartyFactoryContract.setDueDiligenceDuration(3);
-        await icoPoolPartyFactoryContract.setWaterMark(web3.toWei("10"));
-        await icoPoolPartyFactoryContract.createNewPoolParty("testDomain" + domainIndex + ".io", {from: deployer});
-        const poolAddress = await icoPoolPartyFactoryContract.partyList(domainIndex);
+        await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
+        await icoPoolPartyFactory.setWaterMark(web3.toWei("10"));
+        await icoPoolPartyFactory.createNewPoolParty("testDomain" + domainIndex + ".io", {from: deployer});
+        const poolAddress = await icoPoolPartyFactory.partyList(domainIndex);
         domainIndex++;        
-        icoPoolPartyContract = icoPoolParty.at(poolAddress);
+        icoPoolParty = poolPartyArtifact.at(poolAddress);
         
         //ADD FUNDS TO POOL (for each of the 5 participants)
         smartLog("Adding Funds to pool...", true);
-        await icoPoolPartyContract.addFundsToPool({from: investor1, value: web3.toWei("4", "ether")});
-        await icoPoolPartyContract.addFundsToPool({from: investor2, value: web3.toWei("3", "ether")});            
-        await icoPoolPartyContract.addFundsToPool({from: investor3, value: web3.toWei("2", "ether")});            
-        await icoPoolPartyContract.addFundsToPool({from: investor4, value: web3.toWei("1", "ether")});            
-        await icoPoolPartyContract.addFundsToPool({from: investor5, value: web3.toWei("3", "ether")});            
-        await icoPoolPartyContract.addFundsToPool({from: investor6, value: web3.toWei("2", "ether")});            
-        await icoPoolPartyContract.addFundsToPool({from: investor7, value: web3.toWei("1", "ether")});  
+        await icoPoolParty.addFundsToPool({from: investor1, value: web3.toWei("4", "ether")});
+        await icoPoolParty.addFundsToPool({from: investor2, value: web3.toWei("3", "ether")});
+        await icoPoolParty.addFundsToPool({from: investor3, value: web3.toWei("2", "ether")});
+        await icoPoolParty.addFundsToPool({from: investor4, value: web3.toWei("1", "ether")});
+        await icoPoolParty.addFundsToPool({from: investor5, value: web3.toWei("3", "ether")});
+        await icoPoolParty.addFundsToPool({from: investor6, value: web3.toWei("2", "ether")});
+        await icoPoolParty.addFundsToPool({from: investor7, value: web3.toWei("1", "ether")});
         
         smartLog("Confirming investment amounts...", true);
-        let totalInvested = await icoPoolPartyContract.totalPoolInvestments();
+        let totalInvested = await icoPoolParty.totalPoolInvestments();
         assert.equal(totalInvested, web3.toWei("16", "ether"), "Incorrect total");
         
-        let investmentAmount = (await icoPoolPartyContract.investors(investor1))[0];
+        let investmentAmount = (await icoPoolParty.investors(investor1))[InvestorStruct.investmentAmount];
         assert.equal(investmentAmount, web3.toWei("4", "ether"), "Incorrect balance");
         
-        let investmentAmount2 = (await icoPoolPartyContract.investors(investor2))[0];
+        let investmentAmount2 = (await icoPoolParty.investors(investor2))[InvestorStruct.investmentAmount];
         assert.equal(investmentAmount2, web3.toWei("3", "ether"), "Incorrect balance");
         
-        let investmentAmount3 = (await icoPoolPartyContract.investors(investor3))[0];
+        let investmentAmount3 = (await icoPoolParty.investors(investor3))[InvestorStruct.investmentAmount];
         assert.equal(investmentAmount3, web3.toWei("2", "ether"), "Incorrect balance");
 
-        let investmentAmount7 = (await icoPoolPartyContract.investors(investor7))[0];
+        let investmentAmount7 = (await icoPoolParty.investors(investor7))[InvestorStruct.investmentAmount];
         assert.equal(investmentAmount7, web3.toWei("1", "ether"), "Incorrect balance");
 
         //Have investor 3 leave the pool
         smartLog("Having Investor 3 leave the pool...", true);
-        await icoPoolPartyContract.leavePool({from: investor3});
-        totalInvested = await icoPoolPartyContract.totalPoolInvestments();
+        await icoPoolParty.leavePool({from: investor3});
+        totalInvested = await icoPoolParty.totalPoolInvestments();
         assert.equal(totalInvested, web3.toWei("14", "ether"), "Incorrect total");
         
         //Set the Authorized Configuration Address
-        let poolState = await icoPoolPartyContract.poolStatus();
-        await icoPoolPartyContract.setAuthorizedConfigurationAddressTest(accounts[7], false, {from: accounts[0], value: web3.toWei("0.005")});
-        let poolDetails = await icoPoolPartyContract.getPoolDetails();
+        let poolState = await icoPoolParty.poolStatus();
+        await icoPoolParty.setAuthorizedConfigurationAddressTest(accounts[7], false, {from: accounts[0], value: web3.toWei("0.005")});
+        let poolDetails = await icoPoolParty.getPoolDetails();
         smartLog("Pool details [" + poolDetails + "]");
-        let configDetails = await icoPoolPartyContract.getConfigDetails();
+        let configDetails = await icoPoolParty.getConfigDetails();
         smartLog("Config details [" + configDetails + "]");
     });
 
@@ -90,51 +94,51 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         it("should check the pool's balance", async () => {
             smartLog("Checking pool balance...", true);
-            let totalInvested = await icoPoolPartyContract.totalPoolInvestments();
+            let totalInvested = await icoPoolParty.totalPoolInvestments();
             assert.equal(totalInvested, web3.toWei("14", "ether"), "Incorrect total");
         });
 
 
         async function ConfigurePoolDetails(){
             //Configure Pool Details
-            await icoPoolPartyContract.configurePool(customSaleContract.address, genericTokenContract.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
-            assert.equal(await icoPoolPartyContract.buyFunctionName(), "buy()", "Wrong buyFunctionName");
+            await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
+            assert.equal(await icoPoolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
         }
         
         async function CompleteConfiguration() {
             //Complete Configuration
-            await icoPoolPartyContract.completeConfiguration({from: accounts[7]});
-            let poolState = await icoPoolPartyContract.poolStatus();
+            await icoPoolParty.completeConfiguration({from: accounts[7]});
+            let poolState = await icoPoolParty.poolStatus();
             assert.equal(poolState, Status.DueDiligence, "Pool in incorrect status");
         }
 
         async function ReleaseFundsToSale(){
             await sleep(3500);
 
-            await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
+            await icoPoolParty.startInReviewPeriod({from: accounts[7]});
             
-            smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
-            smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
-            let theState = await icoPoolPartyContract.poolStatus();
+            smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]");
+            smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "]");
+            let theState = await icoPoolParty.poolStatus();
             smartLog("Pool State should be 3 [" + theState + "]");
-            smartLog("Total pool investments [" + web3.fromWei(await icoPoolPartyContract.totalPoolInvestments()) + "]");            
+            smartLog("Total pool investments [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
 
-            let subsidy = await calculateSubsidy();
+            const subsidy = calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
-            let feePercent = await icoPoolPartyContract.feePercentage();
-            let total = await icoPoolPartyContract.totalPoolInvestments();
+            let feePercent = await icoPoolParty.feePercentage();
+            let total = await icoPoolParty.totalPoolInvestments();
             let fee = total * feePercent / 100;
             smartLog("Fee [" + web3.fromWei(fee) + "]");
 
-            await icoPoolPartyContract.releaseFundsToSale({
+            await icoPoolParty.releaseFundsToSale({
                 from: accounts[7],
                 value: subsidy + fee,
                 gas: 300000
             });  
 
-            smartLog("Sale Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
-            smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
+            smartLog("Sale Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]");
+            smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "]");
         }
 
 
@@ -146,38 +150,38 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             
             await sleep(3500);
 
-            await icoPoolPartyContract.startInReviewPeriod({from: accounts[7]});
+            await icoPoolParty.startInReviewPeriod({from: accounts[7]});
 
-            smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
-            smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
-            let theState = await icoPoolPartyContract.poolStatus();
+            smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]");
+            smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "]");
+            let theState = await icoPoolParty.poolStatus();
             smartLog("Pool State should be 3 [" + theState + "]");
-            smartLog("Total pool investments [" + web3.fromWei(await icoPoolPartyContract.totalPoolInvestments()) + "]");            
+            smartLog("Total pool investments [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
 
-            let subsidy = await calculateSubsidy();
+            const subsidy = calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
-            let feePercent = await icoPoolPartyContract.feePercentage();
-            let total = await icoPoolPartyContract.totalPoolInvestments();
+            let feePercent = await icoPoolParty.feePercentage();
+            let total = await icoPoolParty.totalPoolInvestments();
             let fee = total * feePercent / 100;
             smartLog("Fee [" + web3.fromWei(fee) + "]");
 
             //Send too little as the subsidy - should fail
-            await expectThrow(icoPoolPartyContract.releaseFundsToSale({
+            await expectThrow(icoPoolParty.releaseFundsToSale({
                 from: accounts[7],
                 value: subsidy - 1*10**16,
                 gas: 300000
             }));
 
-            await expectThrow(icoPoolPartyContract.releaseFundsToSale({
+            await expectThrow(icoPoolParty.releaseFundsToSale({
                 from: accounts[6],
                 value: subsidy + fee,
                 gas: 300000
             }));
-            smartLog("Sale Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
-            smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
+            smartLog("Sale Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]");
+            smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "]");
 
-            let tokensDue0 = (await icoPoolPartyContract.getContributionsDue(investor1))[2];
+            let tokensDue0 = (await icoPoolParty.getContributionsDue(investor1))[Contributions.tokensDue];
             smartLog("Account 0 has [" + tokensDue0 + "] tokens due");            
         });
 
@@ -188,19 +192,19 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             await CompleteConfiguration();
             await ReleaseFundsToSale();
 
-            let investor1tokensDue = (await icoPoolPartyContract.getContributionsDue(investor1))[2];
+            let investor1tokensDue = (await icoPoolParty.getContributionsDue(investor1))[Contributions.tokensDue];
             smartLog("Investor 1 has [" + investor1tokensDue + "] tokens due");            
-            let investor2tokensDue = (await icoPoolPartyContract.getContributionsDue(investor2))[2];
+            let investor2tokensDue = (await icoPoolParty.getContributionsDue(investor2))[Contributions.tokensDue];
             smartLog("Investor 2 has [" + investor2tokensDue + "] tokens due");            
-            let investor3tokensDue = (await icoPoolPartyContract.getContributionsDue(investor3))[2];
+            let investor3tokensDue = (await icoPoolParty.getContributionsDue(investor3))[Contributions.tokensDue];
             smartLog("Investor 3 has [" + investor3tokensDue + "] tokens due");            
-            let investor4tokensDue = (await icoPoolPartyContract.getContributionsDue(investor4))[2];
+            let investor4tokensDue = (await icoPoolParty.getContributionsDue(investor4))[Contributions.tokensDue];
             smartLog("Investor 4 has [" + investor4tokensDue + "] tokens due");            
-            let investor5tokensDue = (await icoPoolPartyContract.getContributionsDue(investor5))[2];
+            let investor5tokensDue = (await icoPoolParty.getContributionsDue(investor5))[Contributions.tokensDue];
             smartLog("Investor 5 has [" + investor5tokensDue + "] tokens due");   
-            let investor6tokensDue = (await icoPoolPartyContract.getContributionsDue(investor6))[2];
+            let investor6tokensDue = (await icoPoolParty.getContributionsDue(investor6))[Contributions.tokensDue];
             smartLog("Investor 6 has [" + investor6tokensDue + "] tokens due");   
-            let investor7tokensDue = (await icoPoolPartyContract.getContributionsDue(investor7))[2];
+            let investor7tokensDue = (await icoPoolParty.getContributionsDue(investor7))[Contributions.tokensDue];
             smartLog("Investor 7 has [" + investor7tokensDue + "] tokens due");   
 
             assert.equal(investor3tokensDue, 0, "Incorrect total, expected 0 tokens");
@@ -216,8 +220,8 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             assert.equal(investor6tokensDue, 2 / 0.04 * 10**18, "Incorrect token balance based on expected token price...");
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
 
         });
 
@@ -225,7 +229,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         it("should handle minimum participant balance...", async () => {            
             await expectThrow(
-                icoPoolPartyContract.addFundsToPool({from: investor3, value: 3})
+                icoPoolParty.addFundsToPool({from: investor3, value: 3})
             );
         });
 
@@ -233,16 +237,16 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             
             smartLog("Adding Ether minimum....");
             //Add a balance that is indivisible by the number of participants (very small wei value)            
-            await icoPoolPartyContract.addFundsToPool({from: investor3, value: web3.toWei("0.01", "ether")});
+            await icoPoolParty.addFundsToPool({from: investor3, value: web3.toWei("0.01", "ether")});
 
             //await ConfigurePoolDetails();
             //Configure Pool Details
-            await icoPoolPartyContract.configurePool(customSaleContract.address, genericTokenContract.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
-            assert.equal(await icoPoolPartyContract.buyFunctionName(), "buy()", "Wrong buyFunctionName");
+            await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
+            assert.equal(await icoPoolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
 
             await CompleteConfiguration();
         
-            let totalTokensExpected = (await icoPoolPartyContract.totalPoolInvestments()) * Math.pow(10,18) / (await icoPoolPartyContract.groupEthPricePerToken())
+            let totalTokensExpected = (await icoPoolParty.totalPoolInvestments()) * Math.pow(10,18) / (await icoPoolParty.groupEthPricePerToken())
             smartLog("EXPECTED TOKENS: " + totalTokensExpected);
             //poolTokenBalance = tokenAddress.balanceOf(address(this));
             //uint256 _expectedTokenBalance = totalPoolInvestments.mul(tokenPrecision).div(groupEthPricePerToken);
@@ -250,23 +254,23 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             await ReleaseFundsToSale();
             
-            let tokensActuallySent = await genericTokenContract.balanceOf(icoPoolPartyContract.address);
+            let tokensActuallySent = await genericToken.balanceOf(icoPoolParty.address);
 
             smartLog("ACTUAL TOKENS: " + tokensActuallySent);
 
-            let investor1tokensDue = (await icoPoolPartyContract.getContributionsDue(investor1))[2];
+            let investor1tokensDue = (await icoPoolParty.getContributionsDue(investor1))[Contributions.tokensDue];
             smartLog("Investor 1 has [" + investor1tokensDue + "] tokens due");            
-            let investor2tokensDue = (await icoPoolPartyContract.getContributionsDue(investor2))[2];
+            let investor2tokensDue = (await icoPoolParty.getContributionsDue(investor2))[Contributions.tokensDue];
             smartLog("Investor 2 has [" + investor2tokensDue + "] tokens due");            
-            let investor3tokensDue = (await icoPoolPartyContract.getContributionsDue(investor3))[2];
+            let investor3tokensDue = (await icoPoolParty.getContributionsDue(investor3))[Contributions.tokensDue];
             smartLog("Investor 3 has [" + investor3tokensDue + "] tokens due");            
-            let investor4tokensDue = (await icoPoolPartyContract.getContributionsDue(investor4))[2];
+            let investor4tokensDue = (await icoPoolParty.getContributionsDue(investor4))[Contributions.tokensDue];
             smartLog("Investor 4 has [" + investor4tokensDue + "] tokens due");            
-            let investor5tokensDue = (await icoPoolPartyContract.getContributionsDue(investor5))[2];
+            let investor5tokensDue = (await icoPoolParty.getContributionsDue(investor5))[Contributions.tokensDue];
             smartLog("Investor 5 has [" + investor5tokensDue + "] tokens due");   
-            let investor6tokensDue = (await icoPoolPartyContract.getContributionsDue(investor6))[2];
+            let investor6tokensDue = (await icoPoolParty.getContributionsDue(investor6))[Contributions.tokensDue];
             smartLog("Investor 6 has [" + investor6tokensDue + "] tokens due");   
-            let investor7tokensDue = (await icoPoolPartyContract.getContributionsDue(investor7))[2];
+            let investor7tokensDue = (await icoPoolParty.getContributionsDue(investor7))[Contributions.tokensDue];
             smartLog("Investor 7 has [" + investor7tokensDue + "] tokens due");   
             
             assert.equal(investor1tokensDue, investor6tokensDue * 2, "Incorrect relative token balances...");
@@ -281,8 +285,8 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             assert.equal(investor6tokensDue, 2 / 0.04 * 10**18, "Incorrect token balance based on expected token price...");
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
         it("should deliver the correct fee to the Pool Party owner...", async () => {
@@ -290,7 +294,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             await ConfigurePoolDetails();
             await CompleteConfiguration();
             
-            let ownerAddress = await icoPoolPartyContract.poolPartyOwnerAddress();
+            let ownerAddress = await icoPoolParty.poolPartyOwnerAddress();
             smartLog("owner Address: " + ownerAddress);
             let balanceBefore = await web3.eth.getBalance(ownerAddress);
             smartLog("Balance before: " + balanceBefore);
@@ -299,18 +303,18 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             
             let balanceAfter = await web3.eth.getBalance(ownerAddress);
 
-            let subsidy = await calculateSubsidy();
+            const subsidy = calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
-            let feePercent = await icoPoolPartyContract.feePercentage();
-            let total = await icoPoolPartyContract.totalPoolInvestments();
+            let feePercent = await icoPoolParty.feePercentage();
+            let total = await icoPoolParty.totalPoolInvestments();
             let fee = total * feePercent / 100;
 
 
             assert.equal(balanceAfter - balanceBefore, fee); 
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
         it("should fail if ReleaseFundsToSale() is called twice...", async () => {
@@ -324,8 +328,8 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             );
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
         it("should fail if no subsidy is sent to subsidized pool...", async () => {
@@ -335,144 +339,111 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             
             await sleep(3500);
             
-            smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
-            smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
-            let theState = await icoPoolPartyContract.poolStatus();
+            smartLog("Sale Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]");
+            smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "]");
+            let theState = await icoPoolParty.poolStatus();
             smartLog("Pool State should be 3 [" + theState + "]");
-            smartLog("Total pool investments [" + web3.fromWei(await icoPoolPartyContract.totalPoolInvestments()) + "]");            
+            smartLog("Total pool investments [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
 
-            let subsidy = await calculateSubsidy();
+            const subsidy = calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
-            let feePercent = await icoPoolPartyContract.feePercentage();
-            let total = await icoPoolPartyContract.totalPoolInvestments();
+            let feePercent = await icoPoolParty.feePercentage();
+            let total = await icoPoolParty.totalPoolInvestments();
             let fee = total * feePercent / 100;
             smartLog("Fee [" + web3.fromWei(fee) + "]");
 
             await expectThrow(
-                icoPoolPartyContract.releaseFundsToSale({
+                icoPoolParty.releaseFundsToSale({
                     from: accounts[7],
                     value: 0,
                     gas: 300000
                 })
             );
 
-            smartLog("Sale Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(customSaleContract.address)) + "]");
-            smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolPartyContract.address)) + "]");
+            smartLog("Sale Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]");
+            smartLog("Pool Contract Balance AFTER [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "]");
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.equal(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
 
         it("should send Ether into fallback function if buy() not set...", async () => {
 
             //Configure Pool Details
-            await icoPoolPartyContract.configurePool(customSaleContract.address, genericTokenContract.address, "N/A", "TestValue", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
-            assert.equal(await icoPoolPartyContract.buyFunctionName(), "N/A", "Wrong buyFunctionName");
+            await icoPoolParty.configurePool(customSale.address, genericToken.address, "N/A", "TestValue", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
+            assert.equal(await icoPoolParty.buyFunctionName(), "N/A", "Wrong buyFunctionName");
 
             await CompleteConfiguration();
 
-            smartLog("Contract Address: " + customSaleContract.address);
-            let balanceBeforeRelease = await web3.eth.getBalance(customSaleContract.address);
+            smartLog("Contract Address: " + customSale.address);
+            let balanceBeforeRelease = await web3.eth.getBalance(customSale.address);
             smartLog("Balance Before Release: " + balanceBeforeRelease);
 
             await ReleaseFundsToSale();
             
-            let balanceAfterRelease = await web3.eth.getBalance(customSaleContract.address);
+            let balanceAfterRelease = await web3.eth.getBalance(customSale.address);
             smartLog("Balance After Release: " + balanceAfterRelease);
             //Total pool investments + subsidy
             //uint256 _groupContributionPercent = uint256(100).sub(actualGroupDiscountPercent);
-            let groupDiscountPercent = await icoPoolPartyContract.actualGroupDiscountPercent();
-            let totalPoolInvestments = await icoPoolPartyContract.totalPoolInvestments();
+            let groupDiscountPercent = await icoPoolParty.actualGroupDiscountPercent();
+            let totalPoolInvestments = await icoPoolParty.totalPoolInvestments();
             let amountToRelease = totalPoolInvestments / (100 - groupDiscountPercent) * 100;
-            //let totalInvestments = await icoPoolPartyContract.totalPoolInvestments()
+            //let totalInvestments = await icoPoolParty.totalPoolInvestments()
             //_actualSubsidy = _amountToRelease.sub(totalPoolInvestments);
             smartLog("amountToRelease: " + amountToRelease);
             assert.equal(balanceAfterRelease - balanceBeforeRelease, amountToRelease);
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
 
         it("should should be able to call claim() after ReleaseFundsToSale() after minting tokens", async () => {
             
             //Configure Pool Details
-            await icoPoolPartyContract.configurePool(customSaleContract.address, genericTokenContract.address, "N/A", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
-            assert.equal(await icoPoolPartyContract.buyFunctionName(), "N/A", "Wrong buyFunctionName");
+            await icoPoolParty.configurePool(customSale.address, genericToken.address, "N/A", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: accounts[7]});
+            assert.equal(await icoPoolParty.buyFunctionName(), "N/A", "Wrong buyFunctionName");
 
             await CompleteConfiguration();
 
-            smartLog("Contract Address: " + customSaleContract.address);
-            let balanceBeforeRelease = await web3.eth.getBalance(customSaleContract.address);
+            smartLog("Contract Address: " + customSale.address);
+            let balanceBeforeRelease = await web3.eth.getBalance(customSale.address);
             smartLog("Balance Before Release: " + balanceBeforeRelease);
 
         
-            let groupDiscountPercent = await icoPoolPartyContract.actualGroupDiscountPercent(); //20 (0.05 -> 0.04)
-            let totalPoolInvestments = await icoPoolPartyContract.totalPoolInvestments();
+            let groupDiscountPercent = await icoPoolParty.actualGroupDiscountPercent(); //20 (0.05 -> 0.04)
+            let totalPoolInvestments = await icoPoolParty.totalPoolInvestments();
             let amountToRelease = totalPoolInvestments * 100  / (100 - groupDiscountPercent);
 
-            let tokenPrice = await icoPoolPartyContract.groupEthPricePerToken();
+            let tokenPrice = await icoPoolParty.groupEthPricePerToken();
             let tokenPriceWei = tokenPrice / Math.pow(10,18);
             //Manually Mint the tokens
             smartLog("Total Tokens to Mint: " + (amountToRelease / tokenPriceWei) );
-            await customSaleContract.mintTokens(icoPoolPartyContract.address, (amountToRelease / tokenPriceWei), {
+            await customSale.mintTokens(icoPoolParty.address, (amountToRelease / tokenPriceWei), {
                 from: accounts[7],
                 gas: 300000
             });
 
             //uint256 _expectedTokenBalance = totalPoolInvestments.mul(tokenPrecision).div(groupEthPricePerToken);
-            let groupEthPricePerToken = await icoPoolPartyContract.groupEthPricePerToken();
-            let expectedTokenBalance = (Number(totalPoolInvestments) + Number(await calculateSubsidy())) * Math.pow(10,18) / groupEthPricePerToken;
+            let groupEthPricePerToken = await icoPoolParty.groupEthPricePerToken();
+            let expectedTokenBalance = (Number(totalPoolInvestments) + Number(calculateSubsidy(await icoPoolParty.actualGroupDiscountPercent(), await icoPoolParty.totalPoolInvestments()))) * Math.pow(10,18) / groupEthPricePerToken;
             smartLog("Expected Token Balance: " + expectedTokenBalance);
 
             await ReleaseFundsToSale();
             
-            let balanceAfterRelease = await web3.eth.getBalance(customSaleContract.address);
+            let balanceAfterRelease = await web3.eth.getBalance(customSale.address);
             smartLog("Balance After Release: " + balanceAfterRelease);            
             smartLog("amountToRelease: " + amountToRelease);
             assert.equal(balanceAfterRelease - balanceBeforeRelease, amountToRelease);
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
-            smartLog("Balance Snapshot: " + await icoPoolPartyContract.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolPartyContract.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");            
+            smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
+            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
     });
-
-    /***********************************************************/
-    /*                    HELPER FUNCTIONS                     */
-
-    /***********************************************************/
-
-    function smartLog(message, override) {
-        let verbose = true;
-        if (verbose || override)
-            console.log(message);
-    }
-
-    async function calculateSubsidy() {
-        let _expectedGroupDiscountPercent = await icoPoolPartyContract.expectedGroupDiscountPercent();
-        smartLog("expectedGroupDiscountPercent [" + _expectedGroupDiscountPercent + "%]");
-        let _actualGroupDiscountPercent = await icoPoolPartyContract.actualGroupDiscountPercent();
-        smartLog("actualGroupDiscountPercent [" + _actualGroupDiscountPercent + "%]");
-        let _expectedGroupTokenPrice = await icoPoolPartyContract.expectedGroupTokenPrice();
-        smartLog("expectedGroupTokenPrice [" + web3.fromWei(_expectedGroupTokenPrice) + "]");
-        let _totalPoolInvestments = await icoPoolPartyContract.totalPoolInvestments();
-        smartLog("totalPoolInvestments [" + web3.fromWei(_totalPoolInvestments) + "]");
-
-        let _groupContPercent = 100 - _actualGroupDiscountPercent;
-        let _amountToRelease = _totalPoolInvestments * 100 / _groupContPercent;
-
-        smartLog("amountToRelease [" + web3.fromWei(_amountToRelease) + "]");
-
-        return _amountToRelease - _totalPoolInvestments;
-    }
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 });
