@@ -7,18 +7,20 @@ import "./interfaces/IErc20Token.sol";
 import "./interfaces/INameService.sol";
 
 /**
- * @title IcoPoolParty
+ * @title PoolParty
  * @dev Individual pools that are linked to a particular ICO
  * @author - Shane van Coller
  */
-contract IcoPoolParty is Ownable {
+contract PoolParty is Ownable {
     using SafeMath for uint256;
 
     /* Constants */
     uint256 constant VERSION = 1;
     uint256 constant DECIMAL_PRECISION = 10**18;
 
-    string public icoUrl;
+    string public rootDomain;
+    string public poolName;
+    string public poolDescription;
     string public buyFunctionName;
     string public refundFunctionName;
     string public claimFunctionName;
@@ -38,7 +40,6 @@ contract IcoPoolParty is Ownable {
     uint256 public balanceRemainingSnapshot;
     uint256 public tokenPrecision;
     uint256 public minPurchaseAmount;
-    uint256 public minOraclizeFee;
     uint256 public dueDiligenceDuration;
     uint256 public poolSubsidyAmount;
     uint256 public allTokensClaimed;
@@ -125,7 +126,7 @@ contract IcoPoolParty is Ownable {
 
     /**
      * @dev Pool constructor which initializes starting parameters
-     * @param _icoUrl Official domain name for the sale
+     * @param _rootDomain Official domain name for the sale
      * @param _waterMark Minimum amount in wei the pool has to reach in order for funds to be released to sale contract
      * @param _feePercentage Fee percentage for using Pool Party
      * @param _withdrawalFee Fee charged for kicking a participant
@@ -133,10 +134,12 @@ contract IcoPoolParty is Ownable {
      * @param _poolPartyOwnerAddress Address to pay the Pool Party fee to
      * @param _dueDiligenceDuration Minimum duration in seconds of the due diligence state
      * @param _minPurchaseAmount Minimum amount in wei allowed to enter the pool
-     * @param _minOraclizeFee Minimum Oraclize fee
+     * @param _nameService Address of the name service to get the authorized coion address from
      */
-    function IcoPoolParty(
-        string _icoUrl,
+    function PoolParty(
+        string _rootDomain,
+        string _poolName,
+        string _poolDescription,
         uint256 _waterMark,
         uint256 _feePercentage,
         uint256 _withdrawalFee,
@@ -144,12 +147,13 @@ contract IcoPoolParty is Ownable {
         address _poolPartyOwnerAddress,
         uint256 _dueDiligenceDuration,
         uint256 _minPurchaseAmount,
-        uint256 _minOraclizeFee,
         address _nameService
     )
         public
     {
-        icoUrl = _icoUrl;
+        rootDomain = _rootDomain;
+        poolName = _poolName;
+        poolDescription = _poolDescription;
         waterMark = _waterMark;
         feePercentage = _feePercentage;
         withdrawalFee = _withdrawalFee;
@@ -157,13 +161,12 @@ contract IcoPoolParty is Ownable {
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         dueDiligenceDuration = _dueDiligenceDuration;
         minPurchaseAmount = _minPurchaseAmount;
-        minOraclizeFee = _minOraclizeFee;
         poolParticipants = 0;
         reviewPeriodStart = 0;
         feeWaived = false;
         nameService = INameService(_nameService);
 
-        PoolCreated(icoUrl, now);
+        PoolCreated(rootDomain, now);
     }
 
     /**
@@ -233,20 +236,20 @@ contract IcoPoolParty is Ownable {
     function setAuthorizedConfigurationAddress() public {
         require(poolStatus == Status.WaterMarkReached);
 
-        authorizedConfigurationAddress = nameService.hashedStringResolutions(keccak256(icoUrl));
+        authorizedConfigurationAddress = nameService.hashedStringResolutions(keccak256(rootDomain));
         AuthorizedAddressConfigured(msg.sender, now);
     }
 
     /**
      * @dev Configure sale parameters - only the authorized address can do this
-     * @param _destination Address where the pool funds will be sent once released to the ICO
+     * @param _destination Address where the pool funds will be sent once released
      * @param _tokenAddress Address of the token being bought (must be an ERC20 token)
      * @param _buyFnName Name of the buy function in the "sale" contract
      * @param _claimFnName Name of the claim tokens function in the "sale" contract
      * @param _refundFnName Name of the claim refund function in the "sale" contract
      * @param _publicTokenPrice Price of the token if bought directly from the ICO
      * @param _groupTokenPrice Discounted price of the token for participants in the pool
-     * @param _subsidy Whether a subsidy amount is due by the ICO when releasing the funds
+     * @param _subsidy Whether a subsidy amount is due when releasing the funds
      */
     function configurePool(
         address _destination,

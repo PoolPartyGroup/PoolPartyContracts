@@ -1,6 +1,6 @@
 const fs = require("fs");
-const poolPartyFactoryConfig = JSON.parse(fs.readFileSync("../build/contracts/IcoPoolPartyFactory.json"));
-const poolPartyConfig = JSON.parse(fs.readFileSync("../build/contracts/IcoPoolParty.json"));
+const poolPartyFactoryConfig = JSON.parse(fs.readFileSync("../build/contracts/PoolPartyFactory.json"));
+const poolPartyConfig = JSON.parse(fs.readFileSync("../build/contracts/PoolParty.json"));
 const nameServiceConfig = JSON.parse(fs.readFileSync("../build/contracts/PoolPartyNameService.json"));
 const mockNameServiceConfig = JSON.parse(fs.readFileSync("../build/contracts/MockNameService.json"));
 

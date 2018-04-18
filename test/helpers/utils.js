@@ -39,8 +39,8 @@ export const DUE_DILIGENCE_DURATION = 3000;
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const MIN_CONT_AMOUNT = web3.toWei("0.01");
 
-export const poolPartyFactoryArtifact = artifacts.require('./IcoPoolPartyFactory');
-export const poolPartyArtifact = artifacts.require('./IcoPoolParty');
+export const poolPartyFactoryArtifact = artifacts.require('./PoolPartyFactory');
+export const poolPartyArtifact = artifacts.require('./PoolParty');
 export const genericTokenArtifact = artifacts.require('./test-contracts/GenericToken');
 export const customSaleArtifact = artifacts.require('./test-contracts/CustomSale');
 export const foregroundTokenSaleArtifact = artifacts.require('./ForegroundTokenSale');

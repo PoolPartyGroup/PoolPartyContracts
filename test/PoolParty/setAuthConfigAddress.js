@@ -9,40 +9,40 @@ import {
     DUE_DILIGENCE_DURATION
 } from './../helpers/utils';
 
-let icoPoolPartyFactory;
-let icoPoolParty;
+let poolPartyFactory;
+let poolParty;
 let mockNameService;
 
-contract('IcoPoolParty', (accounts) => {
+contract('PoolParty', (accounts) => {
     const [_deployer, _investor1, _saleOwner] = accounts;
 
     beforeEach(async () => {
         mockNameService = await mockNameServiceArtifact.new();
         await mockNameService.__callback(web3.sha3("icopoolparty.com"), _saleOwner, 0x42);
 
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
-        await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-        await icoPoolPartyFactory.setWaterMark(web3.toWei("1"));
-        await icoPoolPartyFactory.createNewPoolParty("icopoolparty.com", {from: _investor1});
-        icoPoolParty = poolPartyArtifact.at(await icoPoolPartyFactory.partyList(0));
-        await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
+        poolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
+        await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
+        await poolPartyFactory.setWaterMark(web3.toWei("1"));
+        await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", {from: _investor1});
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+        await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
 
-        assert.equal(await icoPoolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
+        assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
     });
 
     describe('Function: setAuthorizedConfigurationAddress()', () => {
         it('should set authorized configuration address', async () => {
-            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
-            assert.equal(await icoPoolParty.authorizedConfigurationAddress(), _saleOwner, "Incorrect Sale Owner Configured");
+            await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
+            assert.equal(await poolParty.authorizedConfigurationAddress(), _saleOwner, "Incorrect Sale Owner Configured");
         });
 
         it('should attempt to set authorized configuration address in wrong state', async () => {
-            await icoPoolParty.leavePool({from: _investor1});
-            await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("0.1")});
-            assert.notEqual(await icoPoolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
+            await poolParty.leavePool({from: _investor1});
+            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("0.1")});
+            assert.notEqual(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
-            await expectThrow(icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1}));
-            assert.notEqual(await icoPoolParty.authorizedConfigurationAddress(), _saleOwner, "Incorrect Sale Owner Configured");
+            await expectThrow(poolParty.setAuthorizedConfigurationAddress({from: _investor1}));
+            assert.notEqual(await poolParty.authorizedConfigurationAddress(), _saleOwner, "Incorrect Sale Owner Configured");
         });
     });
 });

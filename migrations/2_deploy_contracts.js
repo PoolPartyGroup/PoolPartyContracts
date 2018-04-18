@@ -2,7 +2,7 @@
 const dappConfig = require("../test/helpers/dappConfig.js");
 const fs = require('fs');
 
-const IcoPoolPartyFactory = artifacts.require("IcoPoolPartyFactory");
+const IcoPoolPartyFactory = artifacts.require("PoolPartyFactory");
 const NameService = artifacts.require("PoolPartyNameService");
 const MockNameService = artifacts.require("MockNameService");
 

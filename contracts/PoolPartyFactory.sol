@@ -1,13 +1,14 @@
 pragma solidity ^0.4.18;
 
-import "./IcoPoolParty.sol";
+import "./PoolParty.sol";
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /**
- * @title IcoPoolPartyFactory
+ * @title PoolPartyFactory
  * @dev Factory to create individual Pool Party contracts. Controls default value that pools are created with
  * @author - Shane van Coller
  */
-contract IcoPoolPartyFactory is Ownable {
+contract PoolPartyFactory is Ownable {
 
     uint256 public feePercentage;
     uint256 public withdrawalFee;
@@ -37,7 +38,7 @@ contract IcoPoolPartyFactory is Ownable {
      * @dev Constructor for the Pool Party Factory
      * @param _poolPartyOwnerAddress Account that the fee for the pool party service goes to
      */
-    function IcoPoolPartyFactory(address _poolPartyOwnerAddress, address _nameServiceAddress) public {
+    function PoolPartyFactory(address _poolPartyOwnerAddress, address _nameServiceAddress) public {
         require(_poolPartyOwnerAddress != 0x0);
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
@@ -51,34 +52,37 @@ contract IcoPoolPartyFactory is Ownable {
     }
 
     /**
-     * @notice Creates a new pool with the ICO's official URL.
-     * @param _icoUrl The official URL for the ICO. Must be unique. Confirmation from the ICO about this pool will be posted at this URL
+     * @notice Creates a new pool with the supplied root domain.
+     * @param _rootDomain Root domain for the pool. Must be unique. Authorized configuration address is obtained from this domain
      */
-    function createNewPoolParty(string _icoUrl) public {
-        require(bytes(_icoUrl).length != 0); //Check if url is empty
+    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription) public {
+        //Validate non empty inputs
+        require(bytes(_rootDomain).length != 0);
+        require(bytes(_poolName).length != 0);
+        require(bytes(_poolDescription).length != 0);
 
-        bytes32 _hashedIcoUrl = keccak256(_icoUrl);
-        require(hashedPoolAddress[_hashedIcoUrl] == 0x0); //Check if name already exists
+        bytes32 _hashedDomainName = keccak256(_rootDomain);
+        require(hashedPoolAddress[_hashedDomainName] == 0x0); //Make sure no pool exists for the domain
 
-        IcoPoolParty poolPartyContract = new IcoPoolParty(_icoUrl, waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, minOraclizeFee, nameServiceAddress);
+        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         partyList.push(address(poolPartyContract));
-        hashedPoolAddress[_hashedIcoUrl] = address(poolPartyContract);
+        hashedPoolAddress[_hashedDomainName] = address(poolPartyContract);
 
-        PoolPartyCreated(poolPartyContract, msg.sender, _icoUrl, now);
+        PoolPartyCreated(poolPartyContract, msg.sender, _rootDomain, now);
     }
 
     /**
      * @notice Gets the address of the contract created for a given URL
      * @dev Name is hashed so that it can be used as the key for the mapping - hashing it allows for that name to be an arbitrary length but always stored as bytes32
-     * @param _icoUrl URL of to lookup
+     * @param _rootDomain Domain to lookup
      */
-    function getContractAddressByName(string _icoUrl)
+    function getContractAddressByName(string _rootDomain)
         public
         view
         returns(address)
     {
-        return hashedPoolAddress[keccak256(_icoUrl)];
+        return hashedPoolAddress[keccak256(_rootDomain)];
     }
 
     /**
