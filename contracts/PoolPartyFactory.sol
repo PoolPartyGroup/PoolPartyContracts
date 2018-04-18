@@ -13,11 +13,8 @@ contract PoolPartyFactory is Ownable {
     uint256 public feePercentage;
     uint256 public withdrawalFee;
     uint256 public groupDiscountPercent;
-    uint256 public waterMark;
     uint256 public dueDiligenceDuration;
     uint256 public minPurchaseAmount;
-    uint256 public minOraclizeFee;
-
 
     address public poolPartyOwnerAddress;
     address public nameServiceAddress;
@@ -43,28 +40,30 @@ contract PoolPartyFactory is Ownable {
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
         groupDiscountPercent = 15;
-        waterMark = 15 ether;
         minPurchaseAmount = 0.01 ether;
-        minOraclizeFee = 0.005 ether;
         dueDiligenceDuration = 604800 seconds; //default of 7 days
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         nameServiceAddress = _nameServiceAddress;
     }
 
     /**
-     * @notice Creates a new pool with the supplied root domain.
+     * @notice Creates a new pool with the supplied parameters
      * @param _rootDomain Root domain for the pool. Must be unique. Authorized configuration address is obtained from this domain
+     * @param _poolName Name for the pool
+     * @param _poolDescription Description of what the pool is
+     * @param _waterMark The minimum amount in wei for the pool to be considered a success
      */
-    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription) public {
+    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription, uint256 _waterMark) public {
         //Validate non empty inputs
         require(bytes(_rootDomain).length != 0);
         require(bytes(_poolName).length != 0);
         require(bytes(_poolDescription).length != 0);
+        require(_waterMark > 0);
 
         bytes32 _hashedDomainName = keccak256(_rootDomain);
         require(hashedPoolAddress[_hashedDomainName] == 0x0); //Make sure no pool exists for the domain
 
-        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
+        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         partyList.push(address(poolPartyContract));
         hashedPoolAddress[_hashedDomainName] = address(poolPartyContract);
@@ -133,17 +132,6 @@ contract PoolPartyFactory is Ownable {
     }
 
     /**
-     * @dev Sets the watermark the pool needs to reach in order to have the funds released to the ICO
-     * @param _waterMark The new watermark in wei
-     */
-    function setWaterMark(uint256 _waterMark) public onlyOwner {
-        uint256 _oldValue = waterMark;
-        waterMark = _waterMark;
-
-        WaterMarkUpdate(msg.sender, _oldValue, _waterMark, now);
-    }
-
-    /**
      * @dev Sets the amount of time the pool must be in due diligence state for (in seconds)
      * @param _dueDiligenceDurationInSeconds The new duration in seconds
      */
@@ -164,17 +152,6 @@ contract PoolPartyFactory is Ownable {
         minPurchaseAmount = _minPurchaseAmount;
 
         MinPurchaseAmountUpdate(msg.sender, _oldValue, _minPurchaseAmount, now);
-    }
-
-    /**
-     * @dev Sets the minimum Oraclize fee
-     * @param _minOraclizeFee Minimum Oraclize fee in wei
-     */
-    function setMinOraclizeFee(uint256 _minOraclizeFee) public onlyOwner {
-        uint256 _oldValue = minOraclizeFee;
-        minOraclizeFee = _minOraclizeFee;
-
-        MinOraclizeFeeUpdate(msg.sender, _oldValue, _minOraclizeFee, now);
     }
 
     /**

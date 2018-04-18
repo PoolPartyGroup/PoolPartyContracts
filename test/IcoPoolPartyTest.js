@@ -36,8 +36,6 @@ contract('Pool Party ICO', function (accounts) {
             smartLog("Pool Party Factory Address [" + await poolPartyFactory.address + "]");
 
             await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-            await poolPartyFactory.setWaterMark(web3.toWei("10", "ether"), {from: _deployer});
-            smartLog("New watermark [" + await poolPartyFactory.waterMark() + "]");
 
 //            foregroundTokenSale = await foregroundTokenSaleArtifact.new(400, 100, web3.toWei(0.05, "ether"), _investor1);
             foregroundTokenSale = await foregroundTokenSaleArtifact.new(400, 1, web3.toWei(0.05, "ether"), _investor1);
@@ -48,16 +46,16 @@ contract('Pool Party ICO', function (accounts) {
         });
 
         it("should create new Pool Party", async () => {
-            const tx = await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", {from:_investor1});
+            const tx = await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("10"), {from:_investor1});
             smartLog(tx);
             const poolAddress = await poolPartyFactory.partyList(0);
             poolParty = poolPartyArtifact.at(poolAddress);
             smartLog("Foreground Pool Party Address [" + poolParty.address + "]");
 
             /* Try create another pool with a name that already exists */
-            await expectThrow(poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description"));
+            await expectThrow(poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("10")));
 
-            await poolPartyFactory.createNewPoolParty("themktplace.io", "Pool name", "Pool description");
+            await poolPartyFactory.createNewPoolParty("themktplace.io", "Pool name", "Pool description", web3.toWei("15"));
             let poolAddress2 = await poolPartyFactory.partyList(1);
             const poolPartyContract2 = poolPartyArtifact.at(poolAddress2);
 
