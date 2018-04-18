@@ -1,11 +1,15 @@
 /* global artifacts */
 const dappConfig = require("../test/helpers/dappConfig.js");
+const fs = require('fs');
 
-const CustomSale = artifacts.require("./test-contracts/CustomSale.sol");
-const GenericToken = artifacts.require("./test-contracts/GenericToken.sol");
+const CustomSale = artifacts.require("CustomSale");
+const GenericToken = artifacts.require("GenericToken");
+const MokenNameService = artifacts.require("MockNameService");
 
 module.exports = function (deployer, network, accounts) {
-    if (network == "test" || network == "develop" || network == "development" || network == "rinkeby") {
+    const config = JSON.parse(fs.readFileSync('./config/deploymentConfig.json'));
+
+    if (config.testContract.deployTestContracts) {
         deployer.deploy(GenericToken).then(function () {
             return deployer.deploy(CustomSale, web3.toWei("0.05"), GenericToken.address).then(async () => {
                 const _token = await GenericToken.deployed();

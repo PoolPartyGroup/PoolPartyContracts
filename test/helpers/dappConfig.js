@@ -1,8 +1,10 @@
 const fs = require("fs");
 const poolPartyFactoryConfig = JSON.parse(fs.readFileSync("../build/contracts/IcoPoolPartyFactory.json"));
 const poolPartyConfig = JSON.parse(fs.readFileSync("../build/contracts/IcoPoolParty.json"));
+const nameServiceConfig = JSON.parse(fs.readFileSync("../build/contracts/PoolPartyNameService.json"));
+const mockNameServiceConfig = JSON.parse(fs.readFileSync("../build/contracts/MockNameService.json"));
 
-let configObj = {"PoolPartyFactoryAbi": poolPartyFactoryConfig.abi, "PoolPartyAbi": poolPartyConfig.abi};
+let configObj = {"PoolPartyFactoryAbi": poolPartyFactoryConfig.abi, "PoolPartyAbi": poolPartyConfig.abi, "PoolPartyNameServiceAbi": nameServiceConfig.abi, "MockNameServiceAbi": mockNameServiceConfig.abi};
 
 const dappConfig = {
     addKeyToDappConfig: async (_key, _value) => {

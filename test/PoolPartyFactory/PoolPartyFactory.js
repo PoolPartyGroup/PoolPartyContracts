@@ -3,17 +3,22 @@ import {
     FactoryDefaultConfig,
     ZERO_ADDRESS,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './../helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;
+let mockNameService;
 
 contract('IcoPoolPartyFactory Contract', (accounts) => {
     const [_deployer, _creator1, _creator2, _creator3, _newOwner] = accounts;
 
     beforeEach(async () => {
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, {from: _deployer});
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("api.test.foreground.io"), _creator3.toString(), 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
     });
 
     describe('Function: createNewPoolParty', () => {

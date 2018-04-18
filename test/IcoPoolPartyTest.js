@@ -5,18 +5,21 @@ import {
     calculateSubsidy,
     Status,
     Contributions,
+    DUE_DILIGENCE_DURATION,
     KickReason,
     InvestorStruct,
     dealTokenArtifact,
     foregroundTokenSaleArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let foregroundTokenSale;
 let dealToken;
+let mockNameService;
 
 contract('Pool Party ICO', function (accounts) {
 
@@ -26,10 +29,13 @@ contract('Pool Party ICO', function (accounts) {
         const [_deployer, _investor1, _investor2, _investor6, _investor7, _foregroundSaleAddresses] = accounts;
         
         before(async () => {
-            icoPoolPartyFactory = await poolPartyFactoryArtifact.deployed();
+            mockNameService = await mockNameServiceArtifact.new();
+            await mockNameService.__callback(web3.sha3("api.test.foreground.io"), _investor7.toString(), 0x42);
+
+            icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
             smartLog("Pool Party Factory Address [" + await icoPoolPartyFactory.address + "]");
 
-            await icoPoolPartyFactory.setDueDiligenceDuration(3);
+            await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
             await icoPoolPartyFactory.setWaterMark(web3.toWei("10", "ether"), {from: _deployer});
             smartLog("New watermark [" + await icoPoolPartyFactory.waterMark() + "]");
 
@@ -103,25 +109,12 @@ contract('Pool Party ICO', function (accounts) {
             assert.equal(totalInvested, web3.toWei("11.03123123", "ether"), "Incorrect total");
         });
 
-        //LEGIT SKIP
-        it.skip("should configure pool using actual oraclize call", async () => {
+        it("should configure sale address", async () => {
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("1", "ether")});
             const poolState = await icoPoolParty.poolStatus();
             smartLog("Pool State is [" + poolState + "]");
             assert.equal(poolState, Status.WaterMarkReached, "Pool in incorrect status");
-            await icoPoolParty.configurePool({from: _deployer, value: web3.toWei("0.5")});
-
-            await sleep(100000);
-            const poolDetails = await icoPoolParty.getPoolDetails();
-            smartLog("Foreground pool details [" + poolDetails + "]");
-        });
-
-        it("should configure sale address quickly", async () => {
-            await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("1", "ether")});
-            const poolState = await icoPoolParty.poolStatus();
-            smartLog("Pool State is [" + poolState + "]");
-            assert.equal(poolState, Status.WaterMarkReached, "Pool in incorrect status");
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_investor7, false, {from: _deployer, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _deployer});
             const poolDetails = await icoPoolParty.getPoolDetails();
             smartLog("Foreground pool details [" + poolDetails + "]");
             const configDetails = await icoPoolParty.getConfigDetails();

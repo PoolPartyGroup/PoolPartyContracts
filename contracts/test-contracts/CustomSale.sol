@@ -13,7 +13,7 @@ contract CustomSale is Ownable {
     uint256 amountSentToSale;
 
     function () public payable {
-        require(this.delegatecall(bytes4(keccak256("buy()"))));
+        require(address(this).delegatecall(bytes4(keccak256("buy()"))));
     }
 
     function CustomSale(uint256 _tokenPrice, address _token) public {
@@ -40,6 +40,6 @@ contract CustomSale is Ownable {
     }
 
     function withdrawFunds() public onlyOwner {
-        msg.sender.transfer(this.balance);
+        msg.sender.transfer(address(this).balance);
     }
 }

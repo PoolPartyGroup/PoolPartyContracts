@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo Working directory - $PWD
 rm build/contracts/*
 echo "Cleaned build folder."
 cp test-abis/* build/contracts

@@ -11,7 +11,8 @@ import {
     foregroundTokenSaleArtifact,
     genericTokenArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './../helpers/utils';
 
 let foregroundTokenSale;
@@ -21,6 +22,7 @@ let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
 let customSale;
+let mockNameService;
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _foregroundSaleAddresses] = accounts;
@@ -30,7 +32,10 @@ contract('IcoPoolParty', (accounts) => {
         customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: _deployer});
         await genericToken.transferOwnership(customSale.address, {from: _deployer});
 
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, {from: _deployer});
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("api.test.foreground.io"), _saleOwner, 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION / 1000);
         await icoPoolPartyFactory.setWaterMark(web3.toWei("1"));
         await icoPoolPartyFactory.createNewPoolParty("api.test.foreground.io", {from: _investor1});
@@ -38,10 +43,7 @@ contract('IcoPoolParty', (accounts) => {
         icoPoolParty = poolPartyArtifact.at(await icoPoolPartyFactory.partyList(0));
         await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
         await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-        await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {
-            from: _investor1,
-            value: web3.toWei("0.005")
-        });
+        await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: claimTokensFromIco(): Generic Sale', () => {
@@ -189,11 +191,11 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
-            assert.equal(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
+            assert.equal(await icoPoolParty.poolTokenBalance(), 0, "Should nothave received tokens");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "], total investment balance [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
-            assert.isBelow((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Contract balance too high after release funds");
+            assert.equal((web3.eth.getBalance(icoPoolParty.address)).toNumber(), 0, "Contract balance too high after release funds");
             await icoPoolParty.claimRefundFromIco({from: _saleOwner});
-            assert.isAbove((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Refund not transferred");
+            assert.equal((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Refund not transferred");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "], total investment balance [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "], Balance remaining snapshot [" + web3.fromWei(await icoPoolParty.balanceRemainingSnapshot()) + "]");
         });
 
@@ -206,11 +208,11 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await icoPoolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await icoPoolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
-            assert.equal(await icoPoolParty.poolTokenBalance(), 0, "Should have received tokens");
+            assert.equal(await icoPoolParty.poolTokenBalance(), 0, "Should not have received tokens");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "], total investment balance [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "]");
-            assert.isBelow((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Contract balance too high after release funds");
+            assert.equal((web3.eth.getBalance(icoPoolParty.address)).toNumber(), 0, "Contract balance too high after release funds");
             await icoPoolParty.claimRefundFromIco({from: _saleOwner});
-            assert.isAbove((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Refund not transferred");
+            assert.equal((web3.eth.getBalance(icoPoolParty.address)).toNumber(), await icoPoolParty.totalPoolInvestments(), "Refund not transferred");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(icoPoolParty.address)) + "], total investment balance [" + web3.fromWei(await icoPoolParty.totalPoolInvestments()) + "], Balance remaining snapshot [" + web3.fromWei(await icoPoolParty.balanceRemainingSnapshot()) + "]");
             await expectThrow(icoPoolParty.claimRefundFromIco({from: _saleOwner}));
         });

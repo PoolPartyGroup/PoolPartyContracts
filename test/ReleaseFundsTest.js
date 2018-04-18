@@ -10,23 +10,32 @@ import {
     customSaleArtifact,
     genericTokenArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let customSale;
 let genericToken;
+let mockNameService;
 
 contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
     const [deployer, investor1, investor2, investor3, investor4, investor5, investor6, investor7] = accounts;
 
     let domainIndex = 0;
-    beforeEach(async () => {
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.deployed();
-        smartLog("Pool Party Factory Address [" + await icoPoolPartyFactory.address + "]");
 
+    before(async () => {
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("testDomain" + domainIndex + ".io"), investor7.toString(), 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(deployer, mockNameService.address, {from: deployer});
+    });
+
+    beforeEach(async () => {
+        smartLog("Pool Party Factory Address [" + await icoPoolPartyFactory.address + "]");
+        await mockNameService.__callback(web3.sha3("testDomain" + domainIndex + ".io"), investor7.toString(), 0x42);
 
         genericToken = await genericTokenArtifact.new({from: deployer});
         customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: deployer});
@@ -78,7 +87,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         
         //Set the Authorized Configuration Address
         let poolState = await icoPoolParty.poolStatus();
-        await icoPoolParty.setAuthorizedConfigurationAddressTest(accounts[7], false, {from: accounts[0], value: web3.toWei("0.005")});
+        await icoPoolParty.setAuthorizedConfigurationAddress({from: accounts[0]});
         let poolDetails = await icoPoolParty.getPoolDetails();
         smartLog("Pool details [" + poolDetails + "]");
         let configDetails = await icoPoolParty.getConfigDetails();
@@ -221,7 +230,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
             smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
 
         });
 
@@ -286,7 +295,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
             smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
         it("should deliver the correct fee to the Pool Party owner...", async () => {
@@ -314,7 +323,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
             smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
         it("should fail if ReleaseFundsToSale() is called twice...", async () => {
@@ -329,7 +338,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
             smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
         it("should fail if no subsidy is sent to subsidized pool...", async () => {
@@ -398,7 +407,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
             smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
 
@@ -442,7 +451,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //Check that these accounts cannot withdraw Ether now that they have tokens due to them
             smartLog("Balance Snapshot: " + await icoPoolParty.balanceRemainingSnapshot());
-            assert.isAbove(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
+            assert.equal(await icoPoolParty.balanceRemainingSnapshot(), 0, "Incorrect balance snapshot...");
         });
 
     });

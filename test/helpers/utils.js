@@ -45,6 +45,7 @@ export const genericTokenArtifact = artifacts.require('./test-contracts/GenericT
 export const customSaleArtifact = artifacts.require('./test-contracts/CustomSale');
 export const foregroundTokenSaleArtifact = artifacts.require('./ForegroundTokenSale');
 export const dealTokenArtifact = artifacts.require('./DealToken');
+export const mockNameServiceArtifact = artifacts.require('./test-contracts/MockNameService');
 
 export function calculateFee(_feePercent, _totalInvestment) {
     return _totalInvestment * _feePercent / 100;

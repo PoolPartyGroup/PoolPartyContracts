@@ -9,22 +9,32 @@ import {
     customSaleArtifact,
     genericTokenArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let customSale;
 let genericToken;
+let mockNameService;
 
 contract('ICO Pool Party', function (accounts) {
 
     const [deployer, investor1, investor2, investor3, investor4, investor5, investor6, investor7] = accounts;
 
     let domainIndex = 0;
+    before(async () => {
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("testDomain" + domainIndex + ".io"), investor7.toString(), 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(deployer, mockNameService.address, {from: deployer});
+    });
+
     beforeEach(async () => {
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.deployed();
         smartLog("Pool Party Factory Address [" + await icoPoolPartyFactory.address + "]");
+
+        await mockNameService.__callback(web3.sha3("testDomain" + domainIndex + ".io"), investor7.toString(), 0x42);
 
         genericToken = await genericTokenArtifact.new({from: deployer});
         customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: deployer});
@@ -76,7 +86,7 @@ contract('ICO Pool Party', function (accounts) {
         
         //Set the Authorized Configuration Address
         let poolState = await icoPoolParty.poolStatus();
-        await icoPoolParty.setAuthorizedConfigurationAddressTest(investor7, false, {from: deployer, value: web3.toWei("0.005")});
+        await icoPoolParty.setAuthorizedConfigurationAddress({from: deployer});
         let poolDetails = await icoPoolParty.getPoolDetails();
         smartLog("Pool details [" + poolDetails + "]");
         let configDetails = await icoPoolParty.getConfigDetails();

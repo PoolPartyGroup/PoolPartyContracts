@@ -19,6 +19,7 @@ contract IcoPoolPartyFactory is Ownable {
 
 
     address public poolPartyOwnerAddress;
+    address public nameServiceAddress;
 
     address[] public partyList;
     mapping(bytes32 => address) hashedPoolAddress;
@@ -36,7 +37,7 @@ contract IcoPoolPartyFactory is Ownable {
      * @dev Constructor for the Pool Party Factory
      * @param _poolPartyOwnerAddress Account that the fee for the pool party service goes to
      */
-    function IcoPoolPartyFactory(address _poolPartyOwnerAddress) public {
+    function IcoPoolPartyFactory(address _poolPartyOwnerAddress, address _nameServiceAddress) public {
         require(_poolPartyOwnerAddress != 0x0);
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
@@ -46,6 +47,7 @@ contract IcoPoolPartyFactory is Ownable {
         minOraclizeFee = 0.005 ether;
         dueDiligenceDuration = 604800 seconds; //default of 7 days
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
+        nameServiceAddress = _nameServiceAddress;
     }
 
     /**
@@ -58,7 +60,7 @@ contract IcoPoolPartyFactory is Ownable {
         bytes32 _hashedIcoUrl = keccak256(_icoUrl);
         require(hashedPoolAddress[_hashedIcoUrl] == 0x0); //Check if name already exists
 
-        IcoPoolParty poolPartyContract = new IcoPoolParty(_icoUrl, waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, minOraclizeFee);
+        IcoPoolParty poolPartyContract = new IcoPoolParty(_icoUrl, waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, minOraclizeFee, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         partyList.push(address(poolPartyContract));
         hashedPoolAddress[_hashedIcoUrl] = address(poolPartyContract);

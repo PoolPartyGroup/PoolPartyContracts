@@ -8,13 +8,15 @@ import {
     customSaleArtifact,
     genericTokenArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './../helpers/utils';
 
 let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
 let customSale;
+let mockNameService;
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _tokenAddress] = accounts;
@@ -24,7 +26,10 @@ contract('IcoPoolParty', (accounts) => {
         customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: _deployer});
         await genericToken.transferOwnership(customSale.address, {from: _deployer});
 
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, {from: _deployer});
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("api.test.foreground.io"), _saleOwner, 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await icoPoolPartyFactory.setWaterMark(web3.toWei("1"));
         await icoPoolPartyFactory.createNewPoolParty("api.test.foreground.io", {from: _investor1});
@@ -32,10 +37,7 @@ contract('IcoPoolParty', (accounts) => {
         icoPoolParty = poolPartyArtifact.at(await icoPoolPartyFactory.partyList(0));
         await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
         await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-        await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {
-            from: _investor1,
-            value: web3.toWei("0.005")
-        });
+        await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized with buy and claim function. ', () => {
@@ -204,16 +206,15 @@ contract('IcoPoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: 0% fee. ', () => {
         beforeEach(async () => {
+            await mockNameService.__callback(web3.sha3("zero.fee.test"), _saleOwner, 0x42);
+
             await icoPoolPartyFactory.setFeePercentage(0);
             await icoPoolPartyFactory.createNewPoolParty("zero.fee.test", {from: _investor1});
 
             icoPoolParty = poolPartyArtifact.at(await icoPoolPartyFactory.partyList(1));
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {
-                from: _investor1,
-                value: web3.toWei("0.005")
-            });
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
             await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
@@ -236,15 +237,14 @@ contract('IcoPoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Waive Fee. ', () => {
         beforeEach(async () => {
+            await mockNameService.__callback(web3.sha3("waive.fee.test"), _saleOwner, 0x42);
+
             await icoPoolPartyFactory.createNewPoolParty("waive.fee.test", {from: _investor1});
 
             icoPoolParty = poolPartyArtifact.at(await icoPoolPartyFactory.partyList(1));
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {
-                from: _investor1,
-                value: web3.toWei("0.005")
-            });
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
             await icoPoolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});

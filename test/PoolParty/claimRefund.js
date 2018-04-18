@@ -13,7 +13,8 @@ import {
     foregroundTokenSaleArtifact,
     genericTokenArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './../helpers/utils';
 
 let foregroundTokenSale;
@@ -23,12 +24,16 @@ let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
 let customSale;
+let mockNameService;
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _foregroundSaleAddresses] = accounts;
 
     beforeEach(async () => {
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, {from: _deployer});
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("api.test.foreground.io"), _saleOwner, 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await icoPoolPartyFactory.setWaterMark(web3.toWei("1"));
         await icoPoolPartyFactory.createNewPoolParty("api.test.foreground.io", {from: _investor1});
@@ -37,10 +42,7 @@ contract('IcoPoolParty', (accounts) => {
         await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1.248397872")});
         await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("1.123847")});
         await icoPoolParty.addFundsToPool({from: _investor3, value: web3.toWei("1.22")});
-        await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {
-            from: _investor1,
-            value: web3.toWei("0.005")
-        });
+        await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: claimRefund() - Generic Sale', () => {

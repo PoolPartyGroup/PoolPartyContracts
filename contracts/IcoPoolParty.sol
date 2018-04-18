@@ -4,17 +4,15 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
 import "./interfaces/IErc20Token.sol";
-import "./usingOraclize.sol";
-import "./libraries/OraclizeQueryBuilder.sol";
+import "./interfaces/INameService.sol";
 
 /**
  * @title IcoPoolParty
  * @dev Individual pools that are linked to a particular ICO
  * @author - Shane van Coller
  */
-contract IcoPoolParty is Ownable, usingOraclize {
+contract IcoPoolParty is Ownable {
     using SafeMath for uint256;
-    using OraclizeQueryBuilder for OraclizeQueryBuilder.OraclizeQueries;
 
     /* Constants */
     uint256 constant VERSION = 1;
@@ -56,12 +54,9 @@ contract IcoPoolParty is Ownable, usingOraclize {
     bytes32 hashedBuyFunctionName;
     bytes32 hashedRefundFunctionName;
     bytes32 hashedClaimFunctionName;
-    bytes32 oraclizeQueryId;
 
-    bytes public oraclizeProof;
-
-    OraclizeQueryBuilder.OraclizeQueries oQueries;
     IErc20Token public tokenAddress;
+    INameService public nameService;
 
     Status public poolStatus;
     address[] public investorList;
@@ -149,7 +144,8 @@ contract IcoPoolParty is Ownable, usingOraclize {
         address _poolPartyOwnerAddress,
         uint256 _dueDiligenceDuration,
         uint256 _minPurchaseAmount,
-        uint256 _minOraclizeFee
+        uint256 _minOraclizeFee,
+        address _nameService
     )
         public
     {
@@ -165,6 +161,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
         poolParticipants = 0;
         reviewPeriodStart = 0;
         feeWaived = false;
+        nameService = INameService(_nameService);
 
         PoolCreated(icoUrl, now);
     }
@@ -230,51 +227,14 @@ contract IcoPoolParty is Ownable, usingOraclize {
         msg.sender.transfer(_amountToRefund);
     }
 
-    /* TODO: REMOVE THIS FUNCTION WHEN DEPLOYING - ONLY USED TO SKIP ORACLIZE CALL */
-    function setAuthorizedConfigurationAddressTest(address _authorizedAddress, bool _useWww)
-        public
-        payable
-    {
+    /**
+     * @dev Name Service call to get the authorized configuration address
+     */
+    function setAuthorizedConfigurationAddress() public {
         require(poolStatus == Status.WaterMarkReached);
-        require(msg.value >= minOraclizeFee);
-        configUrlRequiresWww = _useWww;
-        authorizedConfigurationAddress = _authorizedAddress;
+
+        authorizedConfigurationAddress = nameService.hashedStringResolutions(keccak256(icoUrl));
         AuthorizedAddressConfigured(msg.sender, now);
-    }
-
-    /**
-     * @dev Oraclize call to get the authorized configuration address from config page hosted on the domain
-     * @param _useWww Whether or not to use www subdomain for the call to Oraclize
-     */
-    function setAuthorizedConfigurationAddress(bool _useWww)
-        public
-        payable
-    {
-        require(poolStatus == Status.WaterMarkReached);
-        require(msg.value >= minOraclizeFee);
-
-        configUrlRequiresWww = _useWww;
-        oQueries.buildQueries(icoUrl, configUrlRequiresWww);
-        oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
-        oraclizeQueryId = oraclize_query("URL", oQueries.oraclizeQueryAuthorizedConfigAddress);
-    }
-
-    /**
-     * @dev Oraclize callback
-     * @param _qId ID used to tie result back to the original query
-     * @param _result Result of the oracle query
-     * @param _proof TLS notary proof from Oraclize
-     */
-    function __callback(bytes32 _qId, string _result, bytes _proof) public {
-        require (msg.sender == oraclize_cbAddress());
-        oraclizeProof = _proof;
-
-        if(oraclizeQueryId == _qId) {
-            authorizedConfigurationAddress = parseAddr(_result);
-            oraclizeQueryId = 0x0;
-
-            AuthorizedAddressConfigured(msg.sender, now);
-        }
     }
 
     /**
@@ -428,7 +388,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
             require(destinationAddress.call.gas(300000).value(_amountToRelease)(bytes4(hashedBuyFunctionName)));
         }
 
-        balanceRemainingSnapshot = this.balance;
+        balanceRemainingSnapshot = address(this).balance;
 
         //If there is no claim function then assume tokens are minted at time they are bought (for example TokenMarketCrowdSale)
         if (hashedClaimFunctionName == keccak256("N/A")) {
@@ -472,9 +432,9 @@ contract IcoPoolParty is Ownable, usingOraclize {
 
         require(destinationAddress.call(bytes4(hashedRefundFunctionName)));
 
-        if (this.balance >= totalPoolInvestments) {
+        if (address(this).balance >= totalPoolInvestments) {
             poolStatus = Status.Claim;
-            balanceRemainingSnapshot = this.balance.sub(poolSubsidyAmount);
+            balanceRemainingSnapshot = address(this).balance.sub(poolSubsidyAmount);
             msg.sender.transfer(poolSubsidyAmount); //Return the subsidy amount to the ICO as the pool has no clai to this
             ClaimedRefundFromIco(address(this), msg.sender, balanceRemainingSnapshot, now);
         } else {
@@ -523,7 +483,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
 
         _investor.hasClaimedRefund = true;
 
-        var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
+        var(_percentageContribution, _refundAmount,) = calculateParticipationAmounts(msg.sender);
 
         if (_investor.percentageContribution == 0) {
             _investor.percentageContribution = _percentageContribution;
@@ -638,7 +598,7 @@ contract IcoPoolParty is Ownable, usingOraclize {
     /**
      * @dev Set precision based on decimal places in the token
      */
-    function power(uint256 _a, uint256 _b) internal returns (uint256) {
+    function power(uint256 _a, uint256 _b) internal pure returns (uint256) {
         return _a ** _b;
     }
 }

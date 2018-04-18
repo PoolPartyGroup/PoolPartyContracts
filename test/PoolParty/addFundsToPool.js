@@ -8,7 +8,8 @@ import {
     MIN_CONT_AMOUNT,
     genericTokenArtifact,
     poolPartyArtifact,
-    poolPartyFactoryArtifact
+    poolPartyFactoryArtifact,
+    mockNameServiceArtifact
 } from './../helpers/utils';
 
 const expectedDiscountPercentage = 15;
@@ -16,6 +17,7 @@ const expectedDiscountPercentage = 15;
 let icoPoolPartyFactory;
 let icoPoolParty;
 let genericToken;
+let mockNameService;
 
 contract('IcoPoolParty', (accounts) => {
     const [_deployer, _investor1, _investor2, _saleAddress, _investor3, _nonInvestor, _saleOwner, _investor4, _tokenAddress] = accounts;
@@ -23,7 +25,10 @@ contract('IcoPoolParty', (accounts) => {
     beforeEach(async () => {
         genericToken = await genericTokenArtifact.new();
 
-        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, {from: _deployer});
+        mockNameService = await mockNameServiceArtifact.new();
+        await mockNameService.__callback(web3.sha3("api.test.foreground.io"), _saleOwner, 0x42);
+
+        icoPoolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await icoPoolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await icoPoolPartyFactory.setWaterMark(web3.toWei("1"));
         await icoPoolPartyFactory.createNewPoolParty("api.test.foreground.io", {from: _investor1});
@@ -70,7 +75,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should add funds to pool when in "Due Diligence" status', async () => {
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
@@ -83,7 +88,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to add funds to pool when in "In Review" status', async () => {
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
@@ -185,7 +190,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should leave pool in "Due Diligence" status', async () => {
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.05")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
@@ -201,7 +206,7 @@ contract('IcoPoolParty', (accounts) => {
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.09")});
             await icoPoolParty.addFundsToPool({from: _investor3, value: web3.toWei("0.011")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
@@ -258,7 +263,7 @@ contract('IcoPoolParty', (accounts) => {
     describe('Function: configurePool()', () => {
         it('should configure pool', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
 
             assert.equal(await icoPoolParty.destinationAddress(), _saleAddress, "Incorrect Sale Owner Configured");
@@ -285,7 +290,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to configure pool with incorrect values', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
             await expectThrow(icoPoolParty.configurePool(ZERO_ADDRESS, _tokenAddress, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner}));
             await expectThrow(icoPoolParty.configurePool(_saleOwner, ZERO_ADDRESS, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner}));
@@ -301,7 +306,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to configure pool in incorrect state', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
             assert.equal(await icoPoolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.leavePool({from: _investor4});
             assert.equal(await icoPoolParty.poolStatus(), Status.Open, "Pool in incorrect status");
 
@@ -311,7 +316,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to configure pool with non authorized configuration address', async () => {
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await expectThrow(icoPoolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _investor4}));
             assert.equal(await icoPoolParty.destinationAddress(), ZERO_ADDRESS, "Configuration should not have been completed");
         });
@@ -321,7 +326,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should complete configuration when group price configuration is more than the expected pool discount', async () => {
             assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), expectedDiscountPercentage, "Expected discount should be 20%");
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             //0.6 is more that a 15% discount of the public sale price (1 eth)
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("1"), web3.toWei("0.6"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
@@ -331,7 +336,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should complete configuration when group price configuration is exactly the expected pool discount', async () => {
             assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), expectedDiscountPercentage, "Expected discount should be 20%");
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             //0.85 is exactly 15% discount of the public sale price (1 eth)
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("1"), web3.toWei("0.85"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
@@ -341,7 +346,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to complete configuration when group price configuration is less than expected pool discount', async () => {
             assert.equal(await icoPoolPartyFactory.groupDiscountPercent(), expectedDiscountPercentage, "Expected discount should be 20%");
             await icoPoolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             //0.9 is less than 15% discount of the public sale price (1 eth) so this should fail
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("1"), web3.toWei("0.9"), true, {from: _saleOwner});
             await expectThrow(icoPoolParty.completeConfiguration({from: _saleOwner}));
@@ -350,7 +355,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to complete configuration with non authorized configuration address', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await expectThrow(icoPoolParty.completeConfiguration({from: _investor1}));
             assert.equal(await icoPoolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
@@ -381,7 +386,7 @@ contract('IcoPoolParty', (accounts) => {
 
         it('should attempt to complete configuration before configuring the pool', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("1")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             assert.equal(await icoPoolParty.destinationAddress(), ZERO_ADDRESS, "Pool in incorrect status");
             assert.equal(await icoPoolParty.tokenAddress(), ZERO_ADDRESS, "Pool in incorrect status");
             assert.equal(await icoPoolParty.publicEthPricePerToken(), 0, "Pool in incorrect status");
@@ -395,7 +400,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should kick user', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
@@ -413,7 +418,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to kick user before due diligence has elapsed', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
@@ -428,7 +433,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to kick user using non authorized configuration account', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
@@ -451,7 +456,7 @@ contract('IcoPoolParty', (accounts) => {
             assert.equal(await icoPoolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
             await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await expectThrow(icoPoolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
@@ -464,7 +469,7 @@ contract('IcoPoolParty', (accounts) => {
         it('should attempt to kick user that does not exist', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
@@ -490,7 +495,7 @@ contract('IcoPoolParty', (accounts) => {
             assert.equal(await icoPoolParty.poolParticipants(), 4, "Incorrect number of participants");
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
 
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
 
@@ -517,7 +522,7 @@ contract('IcoPoolParty', (accounts) => {
         it.skip('should check that the fee has been paid to the executor of the transaction, and the rest of the funds sent to investor', async () => {
             await icoPoolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await icoPoolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
-            await icoPoolParty.setAuthorizedConfigurationAddressTest(_saleOwner, false, {from: _investor1, value: web3.toWei("0.005")});
+            await icoPoolParty.setAuthorizedConfigurationAddress({from: _investor1});
             await icoPoolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await icoPoolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await icoPoolParty.totalPoolInvestments(), web3.toWei("1"), "Incorrect total investment balance");
