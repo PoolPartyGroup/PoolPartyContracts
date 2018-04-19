@@ -25,7 +25,7 @@ contract PoolParty is Ownable {
     string public refundFunctionName;
     string public claimFunctionName;
 
-    bytes public supportingDocsHash;
+    bytes public legalDocsHash;
 
     uint256 public waterMark;
     uint256 public feePercentage;
@@ -160,7 +160,7 @@ contract PoolParty is Ownable {
         poolName = _poolName;
         poolDescription = _poolDescription;
         waterMark = _waterMark;
-        supportingDocsHash = _docsLocationHash;
+        legalDocsHash = _docsLocationHash;
         poolCreator = _poolCreator;
 
         PoolCreated(rootDomain, poolCreator, now);
@@ -216,13 +216,13 @@ contract PoolParty is Ownable {
      * @dev Allow the creator of the pool to attach any document/documents associated to the pool (contracts etc). Can only be set once
      * @param _docsLocationHash Decentralized storage location hash of the documents
      */
-    function addSupportingDocumentation(bytes _docsLocationHash)
+    function addLegalDocumentation(bytes _docsLocationHash)
         public
         onlyPoolCreator
     {
         require(_docsLocationHash.length > 0);
-        require(supportingDocsHash.length == 0);
-        supportingDocsHash = _docsLocationHash;
+        require(legalDocsHash.length == 0);
+        legalDocsHash = _docsLocationHash;
     }
 
     /**

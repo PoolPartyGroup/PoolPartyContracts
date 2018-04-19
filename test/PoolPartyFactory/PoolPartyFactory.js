@@ -28,7 +28,7 @@ contract('PoolPartyFactory Contract', (accounts) => {
             assert.equal(await poolParty.rootDomain(), "api.test.foreground.io", "Incorrect root domain stored");
             assert.equal(await poolParty.poolName(), "Pool name", "Incorrect pool name stored");
             assert.equal(await poolParty.poolDescription(), "Pool description", "Incorrect pool description stored");
-            assert.equal(await poolParty.supportingDocsHash(), web3.fromAscii("QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d"), "Incorrect document hash stored");
+            assert.equal(await poolParty.legalDocsHash(), web3.fromAscii("QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d"), "Incorrect document hash stored");
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Incorrect number of entries in the list");
         });
