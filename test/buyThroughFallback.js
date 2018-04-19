@@ -16,6 +16,8 @@ contract('Custom Sale', function (accounts) {
         const [_deployer, _investor1, _investor2, _investor3] = accounts;
 
         beforeEach(async () => {
+            smartLog("Test - " + web3.sha3(1), true);
+            smartLog("Test - " + web3.sha3("2123"), true);
             genericToken = await genericTokenArtifact.deployed();
             customSale = await customSaleArtifact.deployed();
         });
@@ -45,6 +47,7 @@ contract('Custom Sale', function (accounts) {
             smartLog("Sale balance [" + web3.fromWei(web3.eth.getBalance(customSale.address)) + "]", true);
             smartLog("Deployer balance [" + web3.fromWei((web3.eth.getBalance(_deployer))) + "]", true);
         });
+
 
     });
 });

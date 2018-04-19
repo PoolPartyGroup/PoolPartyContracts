@@ -22,7 +22,7 @@ contract('PoolParty', (accounts) => {
 
         poolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-        await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), "", {from: _investor1});
+        await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
         poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
         await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
 

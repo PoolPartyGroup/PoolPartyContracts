@@ -37,6 +37,7 @@ contract PoolPartyFactory is Ownable {
      */
     function PoolPartyFactory(address _poolPartyOwnerAddress, address _nameServiceAddress) public {
         require(_poolPartyOwnerAddress != 0x0);
+        require(_nameServiceAddress != 0x0);
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
         groupDiscountPercent = 15;
@@ -52,19 +53,20 @@ contract PoolPartyFactory is Ownable {
      * @param _poolName Name for the pool
      * @param _poolDescription Description of what the pool is
      * @param _waterMark The minimum amount in wei for the pool to be considered a success
-     * @param _supportingDocsHash Document/documents associated to the pool (contracts etc). Stored in decentralized storage
+     * @param _legalDocsHash Document/documents associated to the pool (contracts etc). Stored in decentralized storage
      */
-    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription, uint256 _waterMark, bytes _supportingDocsHash) public {
+    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription, uint256 _waterMark, uint256 _poolPrice, bytes _legalDocsHash) public {
         //Validate non empty inputs
         require(bytes(_rootDomain).length != 0);
         require(bytes(_poolName).length != 0);
         require(bytes(_poolDescription).length != 0);
+        require(_poolPrice > 0);
         require(_waterMark > 0);
 
         bytes32 _hashedDomainName = keccak256(_rootDomain);
         require(hashedPoolAddress[_hashedDomainName] == 0x0); //Make sure no pool exists for the domain
 
-        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _supportingDocsHash, msg.sender);
+        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _legalDocsHash, msg.sender);
         poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         partyList.push(address(poolPartyContract));

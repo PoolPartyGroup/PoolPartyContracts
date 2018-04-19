@@ -28,6 +28,7 @@ contract PoolParty is Ownable {
     bytes public legalDocsHash;
 
     uint256 public waterMark;
+    uint256 public poolPrice;
     uint256 public feePercentage;
     uint256 public withdrawalFee;
     uint256 public expectedGroupDiscountPercent;
@@ -151,6 +152,7 @@ contract PoolParty is Ownable {
         string _poolName,
         string _poolDescription,
         uint256 _waterMark,
+        uint256 _poolPrice,
         bytes _docsLocationHash,
         address _poolCreator
     )
@@ -160,6 +162,7 @@ contract PoolParty is Ownable {
         poolName = _poolName;
         poolDescription = _poolDescription;
         waterMark = _waterMark;
+        poolPrice = _poolPrice;
         legalDocsHash = _docsLocationHash;
         poolCreator = _poolCreator;
 

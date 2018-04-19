@@ -32,7 +32,7 @@ contract('PoolParty', (accounts) => {
 
         poolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-        await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), "", {from: _investor1});
+        await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
         poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
         await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
@@ -209,7 +209,7 @@ contract('PoolParty', (accounts) => {
             await mockNameService.__callback(web3.sha3("zero.fee.test"), _saleOwner, 0x42);
 
             await poolPartyFactory.setFeePercentage(0);
-            await poolPartyFactory.createNewPoolParty("zero.fee.test", "Pool name", "Pool description", web3.toWei("1"), "", {from: _investor1});
+            await poolPartyFactory.createNewPoolParty("zero.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(1));
             await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
@@ -239,7 +239,7 @@ contract('PoolParty', (accounts) => {
         beforeEach(async () => {
             await mockNameService.__callback(web3.sha3("waive.fee.test"), _saleOwner, 0x42);
 
-            await poolPartyFactory.createNewPoolParty("waive.fee.test", "Pool name", "Pool description", web3.toWei("1"), "", {from: _investor1});
+            await poolPartyFactory.createNewPoolParty("waive.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(1));
             await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
