@@ -25,6 +25,8 @@ contract PoolParty is Ownable {
     string public refundFunctionName;
     string public claimFunctionName;
 
+    bytes public supportingDocsHash;
+
     uint256 public waterMark;
     uint256 public feePercentage;
     uint256 public withdrawalFee;
@@ -47,10 +49,12 @@ contract PoolParty is Ownable {
     address public poolPartyOwnerAddress;
     address public destinationAddress;
     address public authorizedConfigurationAddress;
+    address public poolCreator;
 
     bool public subsidyRequired;
     bool public configUrlRequiresWww;
     bool public feeWaived;
+    bool poolParamsSet;
 
     bytes32 hashedBuyFunctionName;
     bytes32 hashedRefundFunctionName;
@@ -86,7 +90,8 @@ contract PoolParty is Ownable {
     enum Status {Open, WaterMarkReached, DueDiligence, InReview, Claim}
     enum KickReason {Other, Kyc}
 
-    event PoolCreated(string poolName, uint256 date);
+    event PoolCreated(string poolName, address poolCreator, uint256 date);
+    event PoolParametersSet(string rootDomain, uint256 date);
     event SaleDetailsConfigured(address configurer, uint256 date);
     event FundsAdded(address indexed investor, uint256 amount, uint256 date);
     event FundsWithdrawn(address indexed investor, uint256 amount, uint256 date);
@@ -117,7 +122,7 @@ contract PoolParty is Ownable {
     }
 
     /**
-     * @dev Only allow the authorized address to execute the function
+     * @dev Only allow the authorized address to execute a function
      */
     modifier onlyAuthorizedAddress {
         require (authorizedConfigurationAddress != 0x0 && msg.sender == authorizedConfigurationAddress);
@@ -125,9 +130,44 @@ contract PoolParty is Ownable {
     }
 
     /**
+     * @dev Only allow the pool creator address to execute a function
+     */
+    modifier onlyPoolCreator {
+        require (poolCreator != 0x0 && msg.sender == poolCreator);
+        _;
+    }
+
+    /**
      * @dev Pool constructor which initializes starting parameters
      * @param _rootDomain Official domain name for the sale
+     * @param _poolName Name for the pool
+     * @param _poolDescription Description of what the pool is
      * @param _waterMark Minimum amount in wei the pool has to reach in order for funds to be released to sale contract
+     * @param _docsLocationHash (Optional) Document/documents associated to the pool (contracts etc). Stored in decentralized storage
+     * @param _poolCreator The creator of the pool
+     */
+    function PoolParty(
+        string _rootDomain,
+        string _poolName,
+        string _poolDescription,
+        uint256 _waterMark,
+        bytes _docsLocationHash,
+        address _poolCreator
+    )
+        public
+    {
+        rootDomain = _rootDomain;
+        poolName = _poolName;
+        poolDescription = _poolDescription;
+        waterMark = _waterMark;
+        supportingDocsHash = _docsLocationHash;
+        poolCreator = _poolCreator;
+
+        PoolCreated(rootDomain, poolCreator, now);
+    }
+
+    /**
+     * @dev Sets the pool parameters straight after creation, can only be set once and only called by the initial owner of the contract (the Factory)
      * @param _feePercentage Fee percentage for using Pool Party
      * @param _withdrawalFee Fee charged for kicking a participant
      * @param _groupDiscountPercent Expected percentage discount that the pool will receive
@@ -136,11 +176,7 @@ contract PoolParty is Ownable {
      * @param _minPurchaseAmount Minimum amount in wei allowed to enter the pool
      * @param _nameService Address of the name service to get the authorized coion address from
      */
-    function PoolParty(
-        string _rootDomain,
-        string _poolName,
-        string _poolDescription,
-        uint256 _waterMark,
+    function setPoolParameters(
         uint256 _feePercentage,
         uint256 _withdrawalFee,
         uint256 _groupDiscountPercent,
@@ -150,29 +186,43 @@ contract PoolParty is Ownable {
         address _nameService
     )
         public
+        onlyOwner
     {
-        rootDomain = _rootDomain;
-        poolName = _poolName;
-        poolDescription = _poolDescription;
-        waterMark = _waterMark;
+        require(!poolParamsSet);
+        poolParamsSet = true;
+
         feePercentage = _feePercentage;
         withdrawalFee = _withdrawalFee;
         expectedGroupDiscountPercent = _groupDiscountPercent;
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         dueDiligenceDuration = _dueDiligenceDuration;
         minPurchaseAmount = _minPurchaseAmount;
+        nameService = INameService(_nameService);
+
         poolParticipants = 0;
         reviewPeriodStart = 0;
         feeWaived = false;
-        nameService = INameService(_nameService);
 
-        PoolCreated(rootDomain, now);
+        PoolParametersSet(rootDomain, now);
     }
 
     /**
      * @dev Default fallback function - does nothing else except accept payment
      */
     function () public payable {
+    }
+
+    /**
+     * @dev Allow the creator of the pool to attach any document/documents associated to the pool (contracts etc). Can only be set once
+     * @param _docsLocationHash Decentralized storage location hash of the documents
+     */
+    function addSupportingDocumentation(bytes _docsLocationHash)
+        public
+        onlyPoolCreator
+    {
+        require(_docsLocationHash.length > 0);
+        require(supportingDocsHash.length == 0);
+        supportingDocsHash = _docsLocationHash;
     }
 
     /**

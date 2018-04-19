@@ -23,29 +23,43 @@ contract('PoolPartyFactory Contract', (accounts) => {
 
     describe('Function: createNewPoolParty', () => {
         it('should create new pool', async () => {
-            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), {from: _creator1});
+            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), "QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d", {from: _creator1});
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
-            assert.equal(await poolParty.rootDomain(), "api.test.foreground.io", "Incorrect pool details");
+            assert.equal(await poolParty.rootDomain(), "api.test.foreground.io", "Incorrect root domain stored");
+            assert.equal(await poolParty.poolName(), "Pool name", "Incorrect pool name stored");
+            assert.equal(await poolParty.poolDescription(), "Pool description", "Incorrect pool description stored");
+            assert.equal(await poolParty.supportingDocsHash(), web3.fromAscii("QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d"), "Incorrect document hash stored");
+            assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Incorrect number of entries in the list");
         });
 
+        it('should attempt to call "setPoolParameters" manually', async () => {
+            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), "QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d", {from: _creator1});
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, 8, _creator3, {from: _creator1}));
+            assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
+
+            await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, 8, _creator3, {from: _deployer}));
+            assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
+        });
+
         it('should attempt to create new pool with empty domain name, pool name and pool description', async () => {
-            await expectThrow(poolPartyFactory.createNewPoolParty("", "", "", 0, {from: _creator1}));
+            await expectThrow(poolPartyFactory.createNewPoolParty("", "", "", 0, "", {from: _creator1}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 0, "Too many contracts in the list");
 
-            await expectThrow(poolPartyFactory.createNewPoolParty("domain.com", "", "", web3.toWei("15"), {from: _creator1}));
+            await expectThrow(poolPartyFactory.createNewPoolParty("domain.com", "", "", web3.toWei("15"), "", {from: _creator1}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 0, "Too many contracts in the list");
 
-            await expectThrow(poolPartyFactory.createNewPoolParty("", "Pool name", "", 0, {from: _creator1}));
+            await expectThrow(poolPartyFactory.createNewPoolParty("", "Pool name", "", 0, "", {from: _creator1}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 0, "Too many contracts in the list");
 
-            await expectThrow(poolPartyFactory.createNewPoolParty("", "", "Pool Description", 0, {from: _creator1}));
+            await expectThrow(poolPartyFactory.createNewPoolParty("", "", "Pool Description", 0, "", {from: _creator1}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 0, "Too many contracts in the list");
 
-            await expectThrow(poolPartyFactory.createNewPoolParty("domain.com", "", "Pool Description", 0, {from: _creator1}));
+            await expectThrow(poolPartyFactory.createNewPoolParty("domain.com", "", "Pool Description", 0, "", {from: _creator1}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 0, "Too many contracts in the list");
 
-            await expectThrow(poolPartyFactory.createNewPoolParty("domain.com", "Pool Name", "", web3.toWei("15"), {from: _creator1}));
+            await expectThrow(poolPartyFactory.createNewPoolParty("domain.com", "Pool Name", "", web3.toWei("15"), "", {from: _creator1}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 0, "Too many contracts in the list");
         });
 
@@ -58,33 +72,33 @@ contract('PoolPartyFactory Contract', (accounts) => {
                 "dedjusttomakeitevenlongerbecausewhynotrightandmaybejustalittlelongertobeabsolutelysureitworksok",
                 "thisisareallylongpooldescriptiononpurposetotestthecontractthoroughlytoseeifithandleslengthcorrectlyandthisi" +
                 "saddedjusttomakeitevenlongerbecausewhynotrightthisisareallylongpooldescriptiononpurposetotestthecontractthoroughlytoseeifithandleslengthcorrectlyandthisisad" +
-                "dedjusttomakeitevenlongerbecausewhynotrightandmaybejustalittlelongertobeabsolutelysureitworksok", web3.toWei("15"), {from: _creator1});
+                "dedjusttomakeitevenlongerbecausewhynotrightandmaybejustalittlelongertobeabsolutelysureitworksok", web3.toWei("15"), "", {from: _creator1});
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Incorrect number of entries in the list");
         });
 
         it('should attempt to create pool with same name as already existing', async () => {
-            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), {from: _creator1});
-            await expectThrow(poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), {from: _creator2}));
+            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator1});
+            await expectThrow(poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator2}));
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Too many contracts in the list");
         });
 
         it('should create multiple new pools', async () => {
-            await poolPartyFactory.createNewPoolParty("test1.com", "Pool name", "Pool description", web3.toWei("15"), {from: _creator1});
+            await poolPartyFactory.createNewPoolParty("test1.com", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator1});
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect fee percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Incorrect number of entries in the list");
 
-            await poolPartyFactory.createNewPoolParty("test2.com", "Pool name", "Pool description", web3.toWei("15"), {from: _creator2});
+            await poolPartyFactory.createNewPoolParty("test2.com", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator2});
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(1));
             assert.equal(await poolParty.withdrawalFee(), FactoryDefaultConfig.WithdrawlFee, "Incorrect withdrawal fee");
             assert.equal(await poolPartyFactory.getPartyListSize(), 2, "Incorrect number of entries in the list");
 
-            await poolPartyFactory.createNewPoolParty("test3.com", "Pool name", "Pool description", web3.toWei("15"), {from: _creator3});
+            await poolPartyFactory.createNewPoolParty("test3.com", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator3});
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(2));
             assert.equal(await poolParty.expectedGroupDiscountPercent(), FactoryDefaultConfig.GroupDiscountPercent, "Incorrect group discount percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 3, "Incorrect number of entries in the list");
 
-            await poolPartyFactory.createNewPoolParty("test4.com", "Pool name", "Pool description", web3.toWei("15"), {from: _creator2});
+            await poolPartyFactory.createNewPoolParty("test4.com", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator2});
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(3));
             assert.equal(await poolPartyFactory.getPartyListSize(), 4, "Incorrect number of entries in the list");
         });
@@ -92,7 +106,7 @@ contract('PoolPartyFactory Contract', (accounts) => {
 
     describe('Function: getContractAddressByName', () => {
         it('should get the address of the pool party contract by name', async () => {
-            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), {from: _creator1});
+            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), "", {from: _creator1});
             poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
 
             const poolAddress = await poolPartyFactory.getContractAddressByName("api.test.foreground.io");

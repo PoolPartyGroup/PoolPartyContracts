@@ -52,8 +52,9 @@ contract PoolPartyFactory is Ownable {
      * @param _poolName Name for the pool
      * @param _poolDescription Description of what the pool is
      * @param _waterMark The minimum amount in wei for the pool to be considered a success
+     * @param _supportingDocsHash Document/documents associated to the pool (contracts etc). Stored in decentralized storage
      */
-    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription, uint256 _waterMark) public {
+    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription, uint256 _waterMark, bytes _supportingDocsHash) public {
         //Validate non empty inputs
         require(bytes(_rootDomain).length != 0);
         require(bytes(_poolName).length != 0);
@@ -63,7 +64,8 @@ contract PoolPartyFactory is Ownable {
         bytes32 _hashedDomainName = keccak256(_rootDomain);
         require(hashedPoolAddress[_hashedDomainName] == 0x0); //Make sure no pool exists for the domain
 
-        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
+        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _supportingDocsHash, msg.sender);
+        poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         partyList.push(address(poolPartyContract));
         hashedPoolAddress[_hashedDomainName] = address(poolPartyContract);
