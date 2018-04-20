@@ -24,7 +24,9 @@ contract('PoolPartyFactory Contract', (accounts) => {
     describe('Function: createNewPoolParty', () => {
         it('should create new pool', async () => {
             await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d", {from: _creator1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             assert.equal(await poolParty.rootDomain(), "api.test.foreground.io", "Incorrect root domain stored");
             assert.equal(await poolParty.poolName(), "Pool name", "Incorrect pool name stored");
             assert.equal(await poolParty.poolDescription(), "Pool description", "Incorrect pool description stored");
@@ -36,7 +38,9 @@ contract('PoolPartyFactory Contract', (accounts) => {
 
         it('should attempt to call "setPoolParameters" manually', async () => {
             await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d", {from: _creator1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, 8, _creator3, {from: _creator1}));
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
 
@@ -85,38 +89,31 @@ contract('PoolPartyFactory Contract', (accounts) => {
 
         it('should create multiple new pools', async () => {
             await poolPartyFactory.createNewPoolParty("test1.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            let _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect fee percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Incorrect number of entries in the list");
 
             await poolPartyFactory.createNewPoolParty("test2.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator2});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(1));
+            _poolGuid = await poolPartyFactory.partyGuidList(1);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             assert.equal(await poolParty.withdrawalFee(), FactoryDefaultConfig.WithdrawlFee, "Incorrect withdrawal fee");
             assert.equal(await poolPartyFactory.getPartyListSize(), 2, "Incorrect number of entries in the list");
 
             await poolPartyFactory.createNewPoolParty("test3.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator3});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(2));
+            _poolGuid = await poolPartyFactory.partyGuidList(2);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             assert.equal(await poolParty.expectedGroupDiscountPercent(), FactoryDefaultConfig.GroupDiscountPercent, "Incorrect group discount percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 3, "Incorrect number of entries in the list");
 
             await poolPartyFactory.createNewPoolParty("test4.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator2});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(3));
+            _poolGuid = await poolPartyFactory.partyGuidList(3);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             assert.equal(await poolPartyFactory.getPartyListSize(), 4, "Incorrect number of entries in the list");
-        });
-    });
-
-    describe('Function: getContractAddressByName', () => {
-        it('should get the address of the pool party contract by name', async () => {
-            await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
-
-            const poolAddress = await poolPartyFactory.getContractAddressByName("api.test.foreground.io");
-            assert.equal(poolAddress, poolParty.address, "Incorrect address for pool party contract");
-        });
-
-        it('should attempt to get the address of a contract that does not exist', async () => {
-            const poolAddress = await poolPartyFactory.getContractAddressByName("notfound.com");
-            assert.equal(poolAddress, ZERO_ADDRESS, "Pool address should be 0");
         });
     });
 

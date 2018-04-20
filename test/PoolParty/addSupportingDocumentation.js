@@ -27,7 +27,8 @@ contract('PoolParty', (accounts) => {
     describe('Function: addLegalDocumentation()', () => {
         it('should set supporting documentation location hash', async () => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
             await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
@@ -37,7 +38,8 @@ contract('PoolParty', (accounts) => {
 
         it('should attempt to set documentation location hash after it has already been set', async () => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: _investor1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
             await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
@@ -48,7 +50,8 @@ contract('PoolParty', (accounts) => {
 
         it('should attempt to set documentation location with empty value', async () => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
             await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
@@ -58,7 +61,9 @@ contract('PoolParty', (accounts) => {
 
         it('should attempt to set documentation location from unauthorized account', async () => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 

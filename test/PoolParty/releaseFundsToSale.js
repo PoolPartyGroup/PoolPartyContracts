@@ -34,7 +34,9 @@ contract('PoolParty', (accounts) => {
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
-        poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+        const _poolGuid = await poolPartyFactory.partyGuidList(0);
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
         await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
         await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
@@ -211,7 +213,9 @@ contract('PoolParty', (accounts) => {
             await poolPartyFactory.setFeePercentage(0);
             await poolPartyFactory.createNewPoolParty("zero.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(1));
+            const _poolGuid = await poolPartyFactory.partyGuidList(1);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
             await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
@@ -241,7 +245,9 @@ contract('PoolParty', (accounts) => {
 
             await poolPartyFactory.createNewPoolParty("waive.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(1));
+            const _poolGuid = await poolPartyFactory.partyGuidList(1);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
             await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
             await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
             await poolParty.setAuthorizedConfigurationAddress({from: _investor1});

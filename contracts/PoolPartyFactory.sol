@@ -16,13 +16,15 @@ contract PoolPartyFactory is Ownable {
     uint256 public dueDiligenceDuration;
     uint256 public minPurchaseAmount;
 
+    uint256 guidNonce;
+
     address public poolPartyOwnerAddress;
     address public nameServiceAddress;
 
-    address[] public partyList;
-    mapping(bytes32 => address) hashedPoolAddress;
+    bytes32[] public partyGuidList;
+    mapping(bytes32 => address) public poolAddresses;
 
-    event PoolPartyCreated(address indexed poolAddress, address indexed creator, string poolUrl, uint256 date);
+    event PoolPartyCreated(bytes32 guid, address indexed poolAddress, address indexed creator, string poolUrl, uint256 date);
     event FeePercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event WithdrawalFeeUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event GroupDiscountPercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
@@ -63,29 +65,16 @@ contract PoolPartyFactory is Ownable {
         require(_poolPrice > 0);
         require(_waterMark > 0);
 
-        bytes32 _hashedDomainName = keccak256(_rootDomain);
-        require(hashedPoolAddress[_hashedDomainName] == 0x0); //Make sure no pool exists for the domain
+        guidNonce += 1;
 
         PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _legalDocsHash, msg.sender);
         poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
-        partyList.push(address(poolPartyContract));
-        hashedPoolAddress[_hashedDomainName] = address(poolPartyContract);
+        bytes32 _guid = keccak256(msg.sender, guidNonce);
+        partyGuidList.push(_guid);
+        poolAddresses[_guid] = address(poolPartyContract);
 
-        PoolPartyCreated(poolPartyContract, msg.sender, _rootDomain, now);
-    }
-
-    /**
-     * @notice Gets the address of the contract created for a given URL
-     * @dev Name is hashed so that it can be used as the key for the mapping - hashing it allows for that name to be an arbitrary length but always stored as bytes32
-     * @param _rootDomain Domain to lookup
-     */
-    function getContractAddressByName(string _rootDomain)
-        public
-        view
-        returns(address)
-    {
-        return hashedPoolAddress[keccak256(_rootDomain)];
+        PoolPartyCreated(_guid, poolPartyContract, msg.sender, _rootDomain, now);
     }
 
     /**
@@ -97,7 +86,7 @@ contract PoolPartyFactory is Ownable {
         view
         returns(uint256)
     {
-        return partyList.length;
+        return partyGuidList.length;
     }
 
     /**

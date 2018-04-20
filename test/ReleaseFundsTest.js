@@ -48,10 +48,11 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         smartLog("Creating new pool...", true);
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await poolPartyFactory.createNewPoolParty("testDomain" + domainIndex + ".io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), "", {from: deployer});
-        const poolAddress = await poolPartyFactory.partyList(domainIndex);
-        domainIndex++;        
-        poolParty = poolPartyArtifact.at(poolAddress);
-        
+
+        const _poolGuid = await poolPartyFactory.partyGuidList(domainIndex);
+        domainIndex++;
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
         //ADD FUNDS TO POOL (for each of the 5 participants)
         smartLog("Adding Funds to pool...", true);
         await poolParty.addFundsToPool({from: investor1, value: web3.toWei("4", "ether")});

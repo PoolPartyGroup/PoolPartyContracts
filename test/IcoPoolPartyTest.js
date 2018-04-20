@@ -48,22 +48,18 @@ contract('Pool Party ICO', function (accounts) {
         it("should create new Pool Party", async () => {
             const tx = await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), "", {from:_investor1});
             smartLog(tx);
-            const poolAddress = await poolPartyFactory.partyList(0);
-            poolParty = poolPartyArtifact.at(poolAddress);
+            let _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
             smartLog("Foreground Pool Party Address [" + poolParty.address + "]");
 
-            /* Try create another pool with a name that already exists */
-            await expectThrow(poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), ""));
-
             await poolPartyFactory.createNewPoolParty("themktplace.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "");
-            let poolAddress2 = await poolPartyFactory.partyList(1);
-            const poolPartyContract2 = poolPartyArtifact.at(poolAddress2);
+            _poolGuid = await poolPartyFactory.partyGuidList(1);
+            const poolPartyContract2 = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
             smartLog("MKT.place Party Address [" + poolPartyContract2.address + "]");
         });
 
         it("should get pool details", async () => {
-            smartLog("Address of Foreground pool [" + await poolPartyFactory.getContractAddressByName("api.test.foreground.io") + "]");
             const poolDetails = await poolParty.getPoolDetails();
             smartLog("Foreground pool details [" + poolDetails + "]");
         });
@@ -210,7 +206,7 @@ contract('Pool Party ICO', function (accounts) {
             smartLog("Sale State is (should be 5) [" + await foregroundTokenSale.state() + "]");
             smartLog("Tokens received [" + await poolParty.poolTokenBalance() + "]");
 
-            await poolParty.claimTokensFromIco({from: _investor7});
+            await poolParty.claimTokensFromVendor({from: _investor7});
             smartLog("Tokens Received [" + await poolParty.poolTokenBalance() + "]");
             smartLog("Pool Party token balance [" + await dealToken.balanceOf(poolParty.address) + "]");
         });

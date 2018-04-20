@@ -39,13 +39,15 @@ contract('PoolParty', (accounts) => {
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION / 1000);
         await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
-        poolParty = poolPartyArtifact.at(await poolPartyFactory.partyList(0));
+        const _poolGuid = await poolPartyFactory.partyGuidList(0);
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+
         await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
         await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
-    describe('Function: claimTokensFromIco(): Generic Sale', () => {
+    describe('Function: claimTokensFromVendor(): Generic Sale', () => {
         beforeEach(async () => {
             await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
@@ -62,31 +64,31 @@ contract('PoolParty', (accounts) => {
             let contractTokenReceived = await poolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Tokens received should be 0");
 
-            await poolParty.claimTokensFromIco({from: _saleOwner});
+            await poolParty.claimTokensFromVendor({from: _saleOwner});
             contractTokenReceived = await poolParty.poolTokenBalance();
             assert.isAbove(contractTokenReceived, 0, "Should have received tokens");
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
         });
 
         it('should attempt to claim tokens once tokens are already claimed', async () => {
-            await poolParty.claimTokensFromIco({from: _saleOwner});
+            await poolParty.claimTokensFromVendor({from: _saleOwner});
             const contractTokenReceived = await poolParty.poolTokenBalance();
             assert.isAbove(contractTokenReceived, 0, "Should have received tokens");
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
 
-            await expectThrow(poolParty.claimTokensFromIco({from: _saleOwner}));
+            await expectThrow(poolParty.claimTokensFromVendor({from: _saleOwner}));
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
         });
 
         it('should attempt to claim tokens with an unauthorized account', async () => {
-            await expectThrow(poolParty.claimTokensFromIco({from: _investor4}));
+            await expectThrow(poolParty.claimTokensFromVendor({from: _investor4}));
             const contractTokenReceived = await poolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Should have 0 tokens");
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
     });
 
-    describe('Function: claimTokensFromIco(): Generic Sale (automatically call claimTokensFromIco)', () => {
+    describe('Function: claimTokensFromVendor(): Generic Sale (automatically call claimTokensFromVendor)', () => {
         it('should claim tokens from ICO', async () => {
             await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
@@ -101,7 +103,7 @@ contract('PoolParty', (accounts) => {
         });
     });
 
-    describe('Function: claimTokensFromIco(): Generic Sale', () => {
+    describe('Function: claimTokensFromVendor(): Generic Sale', () => {
         beforeEach(async () => {
             await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
@@ -118,21 +120,21 @@ contract('PoolParty', (accounts) => {
             let contractTokenReceived = await poolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Tokens received should be 0");
 
-            await poolParty.claimTokensFromIco({from: _saleOwner});
+            await poolParty.claimTokensFromVendor({from: _saleOwner});
             contractTokenReceived = await poolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Should have received 0 tokens");
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
 
         it('should attempt to claim tokens in incorrect state', async () => {
-            await expectThrow(poolParty.claimTokensFromIco({from: _saleOwner}));
+            await expectThrow(poolParty.claimTokensFromVendor({from: _saleOwner}));
             const contractTokenReceived = await poolParty.poolTokenBalance();
             assert.equal(contractTokenReceived, 0, "Should have received 0 tokens");
             assert.notEqual(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
         });
     });
 
-    describe('Function: claimTokensFromIco(): Foreground Sale', () => {
+    describe('Function: claimTokensFromVendor(): Foreground Sale', () => {
         const TOKEN_PRICE = web3.toWei("0.05");
         beforeEach(async () => {
             await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
@@ -154,28 +156,28 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should claim tokens from ICO', async () => {
-            await poolParty.claimTokensFromIco({from: _saleOwner});
+            await poolParty.claimTokensFromVendor({from: _saleOwner});
             const tokensAllocated = await dealToken.balanceOf(poolParty.address);
             assert.isAbove(tokensAllocated, 0, "Should have received tokens");
         });
 
         it('should attempt to claim tokens once tokens are already claimed', async () => {
-            await poolParty.claimTokensFromIco({from: _saleOwner});
+            await poolParty.claimTokensFromVendor({from: _saleOwner});
             const tokensAllocated = await dealToken.balanceOf(poolParty.address);
             assert.isAbove(tokensAllocated, 0, "Should have received tokens");
-            await expectThrow(poolParty.claimTokensFromIco({from: _saleOwner}));
+            await expectThrow(poolParty.claimTokensFromVendor({from: _saleOwner}));
             assert.equal((await dealToken.balanceOf(poolParty.address)).toNumber(), tokensAllocated.toNumber(), "Should have received tokens");
 
         });
 
         it('should attempt to claim tokens with an unauthorized account', async () => {
-            await expectThrow(poolParty.claimTokensFromIco({from: _investor3}));
+            await expectThrow(poolParty.claimTokensFromVendor({from: _investor3}));
             const tokensAllocated = await dealToken.balanceOf(poolParty.address);
             assert.equal(tokensAllocated, 0, "Should have received tokens");
         });
     });
 
-    describe('Function: claimRefundFromIco()', () => {
+    describe('Function: claimRefundFromVendor()', () => {
         beforeEach(async () => {
             await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
@@ -193,7 +195,7 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolTokenBalance(), 0, "Should nothave received tokens");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "]");
             assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), 0, "Contract balance too high after release funds");
-            await poolParty.claimRefundFromIco({from: _saleOwner});
+            await poolParty.claimRefundFromVendor({from: _saleOwner});
             assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), await poolParty.totalPoolInvestments(), "Refund not transferred");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "], Balance remaining snapshot [" + web3.fromWei(await poolParty.balanceRemainingSnapshot()) + "]");
         });
@@ -210,10 +212,10 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolTokenBalance(), 0, "Should not have received tokens");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "]");
             assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), 0, "Contract balance too high after release funds");
-            await poolParty.claimRefundFromIco({from: _saleOwner});
+            await poolParty.claimRefundFromVendor({from: _saleOwner});
             assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), await poolParty.totalPoolInvestments(), "Refund not transferred");
             smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "], Balance remaining snapshot [" + web3.fromWei(await poolParty.balanceRemainingSnapshot()) + "]");
-            await expectThrow(poolParty.claimRefundFromIco({from: _saleOwner}));
+            await expectThrow(poolParty.claimRefundFromVendor({from: _saleOwner}));
         });
     });
 });

@@ -41,11 +41,8 @@ contract('Generic Pool Party ICO', function (accounts) {
 
         it("should create new Pool Party", async () => {
             await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: _deployer});
-            const poolAddress = await poolPartyFactory.partyList(0);
-            poolParty = poolPartyArtifact.at(poolAddress);
-
-            /* Try create another pool with a name that already exists */
-            await expectThrow(poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), ""));
+            const _poolGuid = await poolPartyFactory.partyGuidList(0);
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
         });
 
         it("should add funds to pool", async () => {

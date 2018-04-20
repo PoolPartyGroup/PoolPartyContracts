@@ -8,7 +8,7 @@ import "./interfaces/INameService.sol";
 
 /**
  * @title PoolParty
- * @dev Individual pools that are linked to a particular ICO
+ * @dev Individual pools for a selected vendor
  * @author - Shane van Coller
  */
 contract PoolParty is Ownable {
@@ -96,16 +96,16 @@ contract PoolParty is Ownable {
     event SaleDetailsConfigured(address configurer, uint256 date);
     event FundsAdded(address indexed investor, uint256 amount, uint256 date);
     event FundsWithdrawn(address indexed investor, uint256 amount, uint256 date);
-    event FundsReleasedToIco(uint256 totalInvestmentAmount, uint256 subsidyAmount, uint256 feeAmount,  address tokenSaleAddress, uint256 date);
+    event FundsReleasedToVendor(uint256 totalInvestmentAmount, uint256 subsidyAmount, uint256 feeAmount,  address tokenSaleAddress, uint256 date);
     event TokensClaimed(address indexed investor, uint256 investmentAmount, uint256 tokensTransferred, uint256 date);
     event InvestorKicked(address indexed investor, uint256 fee, uint256 amount, KickReason reason, uint256 date);
     event RefundClaimed(address indexed investor, uint256 amount, uint256 date);
     event AuthorizedAddressConfigured(address initiator, uint256 date);
     event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, uint256 publicTokenPrice, uint256 groupTokenPrice, bool subsidy, uint256 date);
 
-    event ClaimedTokensFromIco(address indexed owner, uint256 tokenBalance, uint256 date);
-    event ClaimedRefundFromIco(address indexed owner, address initiator, uint256 refundedAmount, uint256 date);
-    event NoRefundFromIco(address indexed owner, address initiator, uint256 date);
+    event ClaimedTokensFromVendor(address indexed owner, uint256 tokenBalance, uint256 date);
+    event ClaimedRefundFromVendor(address indexed owner, address initiator, uint256 refundedAmount, uint256 date);
+    event NoRefundFromVendor(address indexed owner, address initiator, uint256 date);
 
     /**
      * @dev Check the state of the watermark only if the current state is 'Open' or 'WaterMarkReached'
@@ -113,7 +113,7 @@ contract PoolParty is Ownable {
     modifier assessWaterMark {
         _;
 
-        if (poolStatus == Status.Open || poolStatus == Status.WaterMarkReached) { //Only worry about the watermark before the ICO has configured the "sale"
+        if (poolStatus == Status.Open || poolStatus == Status.WaterMarkReached) { //Only worry about the watermark before the ACA has configured the "sale"
             if (totalPoolInvestments < waterMark) { //If the pool total drops below watermark, change status to OPEN
                 poolStatus = Status.Open;
             } else if (totalPoolInvestments >= waterMark) { //If the pool total equals watermark or more, change status to WATERMARKREACHED
@@ -448,17 +448,17 @@ contract PoolParty is Ownable {
 
         //If there is no claim function then assume tokens are minted at time they are bought (for example TokenMarketCrowdSale)
         if (hashedClaimFunctionName == keccak256("N/A")) {
-            claimTokensFromIco();
+            claimTokensFromVendor();
         }
 
-        FundsReleasedToIco(_amountToRelease, _actualSubsidy, _feeAmount, destinationAddress, now);
+        FundsReleasedToVendor(_amountToRelease, _actualSubsidy, _feeAmount, destinationAddress, now);
     }
 
 
     /**
-     * @dev If tokens are not minted by ICO at time of purchase, they need to be claimed once the sale is over - only the authorized address can do this.
+     * @dev If tokens are not minted by vendor at time of purchase, they need to be claimed once the sale is over - only the authorized address can do this.
      */
-    function claimTokensFromIco()
+    function claimTokensFromVendor()
         public
         onlyAuthorizedAddress
     {
@@ -472,14 +472,14 @@ contract PoolParty is Ownable {
         poolTokenBalance = tokenAddress.balanceOf(address(this));
         if (poolTokenBalance > 0) {
             poolStatus = Status.Claim;
-            ClaimedTokensFromIco(address(this), poolTokenBalance, now);
+            ClaimedTokensFromVendor(address(this), poolTokenBalance, now);
         }
     }
 
     /**
 	 * @dev In the case that the token sale is unsuccessful, withdraw funds from Sale Contract back to this contract in order for users to claim their funds back - only the authorized address can do this
      */
-    function claimRefundFromIco()
+    function claimRefundFromVendor()
         public
         onlyAuthorizedAddress
     {
@@ -491,10 +491,10 @@ contract PoolParty is Ownable {
         if (address(this).balance >= totalPoolInvestments) {
             poolStatus = Status.Claim;
             balanceRemainingSnapshot = address(this).balance.sub(poolSubsidyAmount);
-            msg.sender.transfer(poolSubsidyAmount); //Return the subsidy amount to the ICO as the pool has no clai to this
-            ClaimedRefundFromIco(address(this), msg.sender, balanceRemainingSnapshot, now);
+            msg.sender.transfer(poolSubsidyAmount); //Return the subsidy amount to the vendor as the pool has no claim to this
+            ClaimedRefundFromVendor(address(this), msg.sender, balanceRemainingSnapshot, now);
         } else {
-            NoRefundFromIco(address(this), msg.sender, now);
+            NoRefundFromVendor(address(this), msg.sender, now);
         }
     }
 
