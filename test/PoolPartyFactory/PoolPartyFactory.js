@@ -24,8 +24,7 @@ contract('PoolPartyFactory Contract', (accounts) => {
     describe('Function: createNewPoolParty', () => {
         it('should create new pool', async () => {
             await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d", {from: _creator1});
-            const _poolGuid = await poolPartyFactory.partyGuidList(0);
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
 
             assert.equal(await poolParty.rootDomain(), "api.test.foreground.io", "Incorrect root domain stored");
             assert.equal(await poolParty.poolName(), "Pool name", "Incorrect pool name stored");
@@ -38,8 +37,7 @@ contract('PoolPartyFactory Contract', (accounts) => {
 
         it('should attempt to call "setPoolParameters" manually', async () => {
             await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "QmTfCejgo2wTwqnDJs8Lu1pCNeCrCDuE4GAwkna93zdd7d", {from: _creator1});
-            const _poolGuid = await poolPartyFactory.partyGuidList(0);
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
 
             await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, _creator3, {from: _creator1}));
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
@@ -89,29 +87,25 @@ contract('PoolPartyFactory Contract', (accounts) => {
 
         it('should create multiple new pools', async () => {
             await poolPartyFactory.createNewPoolParty("test1.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator1});
-            let _poolGuid = await poolPartyFactory.partyGuidList(0);
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
 
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect fee percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 1, "Incorrect number of entries in the list");
 
             await poolPartyFactory.createNewPoolParty("test2.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator2});
-            _poolGuid = await poolPartyFactory.partyGuidList(1);
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(1));
 
             assert.equal(await poolParty.withdrawalFee(), FactoryDefaultConfig.WithdrawlFee, "Incorrect withdrawal fee");
             assert.equal(await poolPartyFactory.getPartyListSize(), 2, "Incorrect number of entries in the list");
 
             await poolPartyFactory.createNewPoolParty("test3.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator3});
-            _poolGuid = await poolPartyFactory.partyGuidList(2);
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(2));
 
             assert.equal(await poolParty.expectedGroupDiscountPercent(), FactoryDefaultConfig.GroupDiscountPercent, "Incorrect group discount percentage");
             assert.equal(await poolPartyFactory.getPartyListSize(), 3, "Incorrect number of entries in the list");
 
             await poolPartyFactory.createNewPoolParty("test4.com", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "", {from: _creator2});
-            _poolGuid = await poolPartyFactory.partyGuidList(3);
-            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+            poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(3));
 
             assert.equal(await poolPartyFactory.getPartyListSize(), 4, "Incorrect number of entries in the list");
         });

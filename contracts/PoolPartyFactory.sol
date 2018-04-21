@@ -15,15 +15,12 @@ contract PoolPartyFactory is Ownable {
     uint256 public groupDiscountPercent;
     uint256 public dueDiligenceDuration;
 
-    uint256 guidNonce;
-
     address public poolPartyOwnerAddress;
     address public nameServiceAddress;
 
-    bytes32[] public partyGuidList;
-    mapping(bytes32 => address) public poolAddresses;
+    address[] public poolAddresses;
 
-    event PoolPartyCreated(bytes32 guid, address indexed poolAddress, address indexed creator, string poolUrl, uint256 date);
+    event PoolPartyCreated(address indexed poolAddress, address indexed creator, string poolUrl, uint256 date);
     event FeePercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event WithdrawalFeeUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event GroupDiscountPercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
@@ -71,16 +68,12 @@ contract PoolPartyFactory is Ownable {
         require(_poolPrice > 0);
         require(_waterMark > 0);
 
-        guidNonce += 1;
-
         PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _legalDocsHash, msg.sender);
         poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
-        bytes32 _guid = keccak256(msg.sender, guidNonce);
-        partyGuidList.push(_guid);
-        poolAddresses[_guid] = address(poolPartyContract);
+        poolAddresses.push(address(poolPartyContract));
 
-        PoolPartyCreated(_guid, poolPartyContract, msg.sender, _rootDomain, now);
+        PoolPartyCreated(poolPartyContract, msg.sender, _rootDomain, now);
     }
 
     /**
@@ -92,7 +85,7 @@ contract PoolPartyFactory is Ownable {
         view
         returns(uint256)
     {
-        return partyGuidList.length;
+        return poolAddresses.length;
     }
 
     /**

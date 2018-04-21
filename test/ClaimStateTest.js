@@ -47,8 +47,7 @@ contract('ICO Pool Party', function (accounts) {
         smartLog("Creating new pool...", true);
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await poolPartyFactory.createNewPoolParty("testDomain" + domainIndex + ".io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: deployer});
-        const _poolGuid = await poolPartyFactory.partyGuidList(domainIndex);
-        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(domainIndex));
         domainIndex++;
         
         //ADD FUNDS TO POOL (for each of the 5 participants)

@@ -29,8 +29,6 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
     before(async () => {
         mockNameService = await mockNameServiceArtifact.new();
-        await mockNameService.__callback(web3.sha3("testDomain" + domainIndex + ".io"), investor7.toString(), 0x42);
-
         poolPartyFactory = await poolPartyFactoryArtifact.new(deployer, mockNameService.address, {from: deployer});
     });
 
@@ -49,11 +47,10 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         smartLog("Creating new pool...", true);
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
         await poolPartyFactory.createNewPoolParty("testDomain" + domainIndex + ".io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: deployer});
-
-        const _poolGuid = await poolPartyFactory.partyGuidList(domainIndex);
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(domainIndex));
         domainIndex++;
-        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
-        
+
+
         //ADD FUNDS TO POOL (for each of the 5 participants)
         smartLog("Adding Funds to pool...", true);
         await poolParty.addFundsToPool(8, {from: investor1, value: web3.toWei("4", "ether")});

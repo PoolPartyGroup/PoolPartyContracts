@@ -39,8 +39,7 @@ contract('PoolParty', (accounts) => {
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION / 1000);
         await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
 
-        const _poolGuid = await poolPartyFactory.partyGuidList(0);
-        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
+        poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
 
         await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.5")});
         await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.5")});
