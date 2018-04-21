@@ -14,7 +14,6 @@ contract PoolPartyFactory is Ownable {
     uint256 public withdrawalFee;
     uint256 public groupDiscountPercent;
     uint256 public dueDiligenceDuration;
-    uint256 public minPurchaseAmount;
 
     uint256 guidNonce;
 
@@ -30,7 +29,6 @@ contract PoolPartyFactory is Ownable {
     event GroupDiscountPercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event WaterMarkUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event DueDiligenceDurationUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
-    event MinPurchaseAmountUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event MinOraclizeFeeUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
 
     /**
@@ -43,7 +41,6 @@ contract PoolPartyFactory is Ownable {
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
         groupDiscountPercent = 15;
-        minPurchaseAmount = 0.01 ether;
         dueDiligenceDuration = 604800 seconds; //default of 7 days
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         nameServiceAddress = _nameServiceAddress;
@@ -57,7 +54,16 @@ contract PoolPartyFactory is Ownable {
      * @param _waterMark The minimum amount in wei for the pool to be considered a success
      * @param _legalDocsHash Document/documents associated to the pool (contracts etc). Stored in decentralized storage
      */
-    function createNewPoolParty(string _rootDomain, string _poolName, string _poolDescription, uint256 _waterMark, uint256 _poolPrice, bytes _legalDocsHash) public {
+    function createNewPoolParty(
+        string _rootDomain,
+        string _poolName,
+        string _poolDescription,
+        uint256 _waterMark,
+        uint256 _poolPrice,
+        bytes _legalDocsHash
+    )
+        public
+    {
         //Validate non empty inputs
         require(bytes(_rootDomain).length != 0);
         require(bytes(_poolName).length != 0);
@@ -68,7 +74,7 @@ contract PoolPartyFactory is Ownable {
         guidNonce += 1;
 
         PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _legalDocsHash, msg.sender);
-        poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, minPurchaseAmount, nameServiceAddress);
+        poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         bytes32 _guid = keccak256(msg.sender, guidNonce);
         partyGuidList.push(_guid);
@@ -134,17 +140,6 @@ contract PoolPartyFactory is Ownable {
         dueDiligenceDuration = _dueDiligenceDurationInSeconds * 1 seconds;
 
         DueDiligenceDurationUpdate(msg.sender, _oldValue, dueDiligenceDuration, now);
-    }
-
-    /**
-     * @dev Sets the minimum purchase amount to join a pool
-     * @param _minPurchaseAmount Minimum amount in wei
-     */
-    function setMinPurchaseAmount(uint256 _minPurchaseAmount) public onlyOwner {
-        uint256 _oldValue = _minPurchaseAmount;
-        minPurchaseAmount = _minPurchaseAmount;
-
-        MinPurchaseAmountUpdate(msg.sender, _oldValue, _minPurchaseAmount, now);
     }
 
     /**

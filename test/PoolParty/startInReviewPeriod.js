@@ -31,9 +31,9 @@ contract('PoolParty', (accounts) => {
         const _poolGuid = await poolPartyFactory.partyGuidList(0);
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
-        await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("1.248397872")});
-        await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("1.123847")});
-        await poolParty.addFundsToPool({from: _investor3, value: web3.toWei("1.22")});
+        await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("1")});
+        await poolParty.addFundsToPool(3, {from: _investor2, value: web3.toWei("1.5")});
+        await poolParty.addFundsToPool(2, {from: _investor3, value: web3.toWei("1")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 

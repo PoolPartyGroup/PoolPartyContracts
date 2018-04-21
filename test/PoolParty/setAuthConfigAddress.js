@@ -26,7 +26,7 @@ contract('PoolParty', (accounts) => {
         const _poolGuid = await poolPartyFactory.partyGuidList(0);
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
-        await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
+        await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("1")});
 
         assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
     });
@@ -39,7 +39,7 @@ contract('PoolParty', (accounts) => {
 
         it('should attempt to set authorized configuration address in wrong state', async () => {
             await poolParty.leavePool({from: _investor1});
-            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("0.1")});
+            await poolParty.addFundsToPool(1, {from: _investor1, value: web3.toWei("0.5")});
             assert.notEqual(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
             await expectThrow(poolParty.setAuthorizedConfigurationAddress({from: _investor1}));

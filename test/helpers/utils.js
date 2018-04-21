@@ -12,8 +12,8 @@ export const Status = {
     Claim: 4,
     Refunding: 5
 };
-export const InvestorStruct = {
-    investmentAmount: 0,
+export const ParticipantStruct = {
+    amountContributed: 0,
     lastAmountTokensClaimed: 1,
     percentageContribution: 2,
     arrayIndex: 3,
@@ -21,7 +21,8 @@ export const InvestorStruct = {
     isActive: 5,
     refundAmount: 6,
     totalTokensClaimed: 7,
-    totalNumberOfClaims: 8
+    totalNumberOfClaims: 8,
+    quantity: 9
 };
 export const Contributions = {
     percentageContribution: 0,
@@ -47,19 +48,19 @@ export const foregroundTokenSaleArtifact = artifacts.require('./ForegroundTokenS
 export const dealTokenArtifact = artifacts.require('./DealToken');
 export const mockNameServiceArtifact = artifacts.require('./test-contracts/MockNameService');
 
-export function calculateFee(_feePercent, _totalInvestment) {
-    return _totalInvestment * _feePercent / 100;
+export function calculateFee(_feePercent, _totalContribution) {
+    return _totalContribution * _feePercent / 100;
 }
-export function calculateSubsidy(_actualDiscountPercent, _totalInvestment) {
+export function calculateSubsidy(_actualDiscountPercent, _totalContribution) {
     smartLog("actualGroupDiscountPercent [" + _actualDiscountPercent + "%]");
-    smartLog("totalPoolInvestments [" + web3.fromWei(_totalInvestment) + "]");
+    smartLog("totalPoolContributions [" + web3.fromWei(_totalContribution) + "]");
 
     let _groupContPercent = 100 - _actualDiscountPercent;
-    let _amountToRelease = _totalInvestment * 100 / _groupContPercent;
+    let _amountToRelease = _totalContribution * 100 / _groupContPercent;
 
     smartLog("amountToRelease [" + web3.fromWei(_amountToRelease) + "]");
 
-    return _amountToRelease - _totalInvestment;
+    return _amountToRelease - _totalContribution;
 }
 export function smartLog(message, override) {
     let verbose = false;

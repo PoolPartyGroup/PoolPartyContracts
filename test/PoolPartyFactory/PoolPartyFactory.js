@@ -41,10 +41,10 @@ contract('PoolPartyFactory Contract', (accounts) => {
             const _poolGuid = await poolPartyFactory.partyGuidList(0);
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
-            await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, 8, _creator3, {from: _creator1}));
+            await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, _creator3, {from: _creator1}));
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
 
-            await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, 8, _creator3, {from: _deployer}));
+            await expectThrow(poolParty.setPoolParameters(49, 4, 4, _creator2, 6, _creator3, {from: _deployer}));
             assert.equal(await poolParty.feePercentage(), FactoryDefaultConfig.FeePercentage, "Incorrect pool fee percentage");
         });
 

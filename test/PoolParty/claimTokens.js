@@ -6,7 +6,7 @@ import {
     calculateSubsidy,
     Status,
     Contributions,
-    InvestorStruct,
+    ParticipantStruct,
     DUE_DILIGENCE_DURATION,
     customSaleArtifact,
     dealTokenArtifact,
@@ -40,9 +40,9 @@ contract('PoolParty', (accounts) => {
         const _poolGuid = await poolPartyFactory.partyGuidList(0);
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
-        await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("1.248397872")});
-        await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("1.123847")});
-        await poolParty.addFundsToPool({from: _investor3, value: web3.toWei("1.22")});
+        await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("1")});
+        await poolParty.addFundsToPool(3, {from: _investor2, value: web3.toWei("1.5")});
+        await poolParty.addFundsToPool(2, {from: _investor3, value: web3.toWei("1")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
@@ -56,8 +56,8 @@ contract('PoolParty', (accounts) => {
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
             assert.isAbove(await poolParty.poolTokenBalance(), 0, "Should have received tokens");
@@ -65,38 +65,38 @@ contract('PoolParty', (accounts) => {
 
         it('should claim tokens from pool', async () => {
             await poolParty.claimTokens({from: _investor4});
-            const investor4PreviousTokensClaimed = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), investor4PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
 
             await poolParty.claimTokens({from: _investor2});
-            const investor2PreviousTokensClaimed = (await poolParty.investors(_investor2))[InvestorStruct.lastAmountTokensClaimed];
+            const investor2PreviousTokensClaimed = (await poolParty.participants(_investor2))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor2)).toNumber(), investor2PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
 
             await poolParty.claimTokens({from: _investor3});
-            const investor3PreviousTokensClaimed = (await poolParty.investors(_investor3))[InvestorStruct.lastAmountTokensClaimed];
+            const investor3PreviousTokensClaimed = (await poolParty.participants(_investor3))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor3)).toNumber(), investor3PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
         });
 
         it('should claim tokens from pool multiple times', async () => {
             assert.isAbove((await poolParty.getContributionsDue(_investor4))[Contributions.tokensDue], 0, "Should have a non 0 token balance");
             await poolParty.claimTokens({from: _investor4});
-            const investor4PreviousTokensClaimed = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), investor4PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
-            assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), (await poolParty.investors(_investor4))[InvestorStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
+            assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), (await poolParty.participants(_investor4))[ParticipantStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
             assert.equal((await poolParty.getContributionsDue(_investor4))[Contributions.tokensDue], 0, "Should have 0 tokens left to claim");
 
             assert.isAbove((await poolParty.getContributionsDue(_investor2))[Contributions.tokensDue], 0, "Should have a non 0 token balance");
             await poolParty.claimTokens({from: _investor2});
-            const investor2PreviousTokensClaimed = (await poolParty.investors(_investor2))[InvestorStruct.lastAmountTokensClaimed];
+            const investor2PreviousTokensClaimed = (await poolParty.participants(_investor2))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor2)).toNumber(), investor2PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
-            assert.equal((await genericToken.balanceOf(_investor2)).toNumber(), (await poolParty.investors(_investor2))[InvestorStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
+            assert.equal((await genericToken.balanceOf(_investor2)).toNumber(), (await poolParty.participants(_investor2))[ParticipantStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
             assert.equal((await poolParty.getContributionsDue(_investor2))[Contributions.tokensDue], 0, "Should have 0 tokens left to claim");
 
             assert.isAbove((await poolParty.getContributionsDue(_investor3))[Contributions.tokensDue], 0, "Should have a non 0 token balance");
             await poolParty.claimTokens({from: _investor3});
-            const investor3PreviousTokensClaimed = (await poolParty.investors(_investor3))[InvestorStruct.lastAmountTokensClaimed];
+            const investor3PreviousTokensClaimed = (await poolParty.participants(_investor3))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor3)).toNumber(), investor3PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
-            assert.equal((await genericToken.balanceOf(_investor3)).toNumber(), (await poolParty.investors(_investor3))[InvestorStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
+            assert.equal((await genericToken.balanceOf(_investor3)).toNumber(), (await poolParty.participants(_investor3))[ParticipantStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
             assert.equal((await poolParty.getContributionsDue(_investor3))[Contributions.tokensDue], 0, "Should have 0 tokens left to claim");
 
             const totalTokensClaimed = Math.floor((parseInt(investor2PreviousTokensClaimed) + parseInt(investor3PreviousTokensClaimed) + parseInt(investor4PreviousTokensClaimed))/10**8);
@@ -108,16 +108,16 @@ contract('PoolParty', (accounts) => {
 
             assert.isAbove((await poolParty.getContributionsDue(_investor4))[Contributions.tokensDue], 0, "Should have a non 0 token balance");
             await poolParty.claimTokens({from: _investor4}); //Claim again
-            const investor4PreviousTokensClaimed1 = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed1 = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             const total = parseInt(investor4PreviousTokensClaimed) + parseInt(investor4PreviousTokensClaimed1);
             assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), total, "Incorrect number of tokens received");
-            assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), (await poolParty.investors(_investor4))[InvestorStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
+            assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), (await poolParty.participants(_investor4))[ParticipantStruct.totalTokensClaimed].toNumber(), "Token balance and 'number of tokens claimed' should be the same");
             assert.equal((await poolParty.getContributionsDue(_investor4))[Contributions.tokensDue], 0, "Should have 0 tokens left to claim");
         });
 
         it('should attempt to claim tokens from pool multiple times when 2nd attempt has 0 tokens due', async () => {
             await poolParty.claimTokens({from: _investor4});
-            const investor4PreviousTokensClaimed = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await genericToken.balanceOf(_investor4)).toNumber(), investor4PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received");
 
             assert.equal((await poolParty.getContributionsDue(_investor4))[Contributions.tokensDue], 0, "Should have 0 tokens to claim");
@@ -144,8 +144,8 @@ contract('PoolParty', (accounts) => {
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 400000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
@@ -155,15 +155,15 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
 
             await poolParty.claimTokens({from: _investor4});
-            const investor4PreviousTokensClaimed = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await dealToken.balanceOf(_investor4)).toNumber(), investor4PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received 4");
 
             await poolParty.claimTokens({from: _investor2});
-            const investor2PreviousTokensClaimed = (await poolParty.investors(_investor2))[InvestorStruct.lastAmountTokensClaimed];
+            const investor2PreviousTokensClaimed = (await poolParty.participants(_investor2))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await dealToken.balanceOf(_investor2)).toNumber(), investor2PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received 2");
 
             await poolParty.claimTokens({from: _investor3});
-            const investor3PreviousTokensClaimed = (await poolParty.investors(_investor3))[InvestorStruct.lastAmountTokensClaimed];
+            const investor3PreviousTokensClaimed = (await poolParty.participants(_investor3))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await dealToken.balanceOf(_investor3)).toNumber(), investor3PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received 3");
         });
 
@@ -172,7 +172,7 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
 
             await poolParty.claimTokens({from: _investor4});
-            const investor4PreviousTokensClaimed = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal((await dealToken.balanceOf(_investor4)).toNumber(), investor4PreviousTokensClaimed.toNumber(), "Incorrect number of tokens received 4");
 
             assert.equal((await poolParty.getContributionsDue(_investor4))[Contributions.tokensDue], 0, "Should have 0 tokens to claim");
@@ -184,7 +184,7 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
             await expectThrow(poolParty.claimTokens({from: _investor4}));
 
-            const investor4PreviousTokensClaimed = (await poolParty.investors(_investor4))[InvestorStruct.lastAmountTokensClaimed];
+            const investor4PreviousTokensClaimed = (await poolParty.participants(_investor4))[ParticipantStruct.lastAmountTokensClaimed];
             assert.equal(investor4PreviousTokensClaimed, 0, "Contribution amounts should still reflect 0");
         });
     });

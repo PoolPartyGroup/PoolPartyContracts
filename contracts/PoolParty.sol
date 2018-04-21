@@ -8,7 +8,7 @@ import "./interfaces/INameService.sol";
 
 /**
  * @title PoolParty
- * @dev Individual pools for a selected vendor
+ * @dev Individual pool for a selected vendor
  * @author - Shane van Coller
  */
 contract PoolParty is Ownable {
@@ -36,13 +36,12 @@ contract PoolParty is Ownable {
     uint256 public publicEthPricePerToken;
     uint256 public groupEthPricePerToken;
     uint256 public actualGroupDiscountPercent;
-    uint256 public totalPoolInvestments;
+    uint256 public totalPoolContributions;
     uint256 public poolTokenBalance;
     uint256 public poolParticipants;
     uint256 public reviewPeriodStart;
     uint256 public balanceRemainingSnapshot;
     uint256 public tokenPrecision;
-    uint256 public minPurchaseAmount;
     uint256 public dueDiligenceDuration;
     uint256 public poolSubsidyAmount;
     uint256 public allTokensClaimed;
@@ -65,19 +64,19 @@ contract PoolParty is Ownable {
     INameService public nameService;
 
     Status public poolStatus;
-    address[] public investorList;
+    address[] public participantList;
 
-    mapping(address => Investor) public investors;
-    mapping(address => KickedUser) public kickedUsers;
+    mapping(address => Participant) public participants;
+    mapping(address => KickedParticipant) public kickedParticipants;
     mapping(bytes32 => bytes32) queryMapping;
 
-    struct KickedUser {
+    struct KickedParticipant {
         bool hasBeenKicked;
         KickReason kickReason;
     }
 
-    struct Investor {
-        uint256 investmentAmount;
+    struct Participant {
+        uint256 amountContributed;
         uint256 lastAmountTokensClaimed;
         uint256 percentageContribution;
         uint256 arrayIndex;
@@ -86,6 +85,7 @@ contract PoolParty is Ownable {
         uint256 refundAmount;
         uint256 totalTokensClaimed;
         uint256 numberOfTokenClaims;
+        uint256 quantity;
     }
 
     enum Status {Open, WaterMarkReached, DueDiligence, InReview, Claim}
@@ -94,12 +94,12 @@ contract PoolParty is Ownable {
     event PoolCreated(string poolName, address poolCreator, uint256 date);
     event PoolParametersSet(string rootDomain, uint256 date);
     event SaleDetailsConfigured(address configurer, uint256 date);
-    event FundsAdded(address indexed investor, uint256 amount, uint256 date);
-    event FundsWithdrawn(address indexed investor, uint256 amount, uint256 date);
-    event FundsReleasedToVendor(uint256 totalInvestmentAmount, uint256 subsidyAmount, uint256 feeAmount,  address tokenSaleAddress, uint256 date);
-    event TokensClaimed(address indexed investor, uint256 investmentAmount, uint256 tokensTransferred, uint256 date);
-    event InvestorKicked(address indexed investor, uint256 fee, uint256 amount, KickReason reason, uint256 date);
-    event RefundClaimed(address indexed investor, uint256 amount, uint256 date);
+    event FundsAdded(address indexed participant, uint256 quantity, uint256 amount, uint256 date);
+    event FundsWithdrawn(address indexed participant, uint256 amount, uint256 date);
+    event FundsReleasedToVendor(uint256 totalAmountContributed, uint256 subsidyAmount, uint256 feeAmount,  address tokenSaleAddress, uint256 date);
+    event TokensClaimed(address indexed participant, uint256 amountContributed, uint256 tokensTransferred, uint256 date);
+    event ParticipantKicked(address indexed participant, uint256 fee, uint256 amount, KickReason reason, uint256 date);
+    event RefundClaimed(address indexed participant, uint256 amount, uint256 date);
     event AuthorizedAddressConfigured(address initiator, uint256 date);
     event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, uint256 publicTokenPrice, uint256 groupTokenPrice, bool subsidy, uint256 date);
 
@@ -114,9 +114,9 @@ contract PoolParty is Ownable {
         _;
 
         if (poolStatus == Status.Open || poolStatus == Status.WaterMarkReached) { //Only worry about the watermark before the ACA has configured the "sale"
-            if (totalPoolInvestments < waterMark) { //If the pool total drops below watermark, change status to OPEN
+            if (totalPoolContributions < waterMark) { //If the pool total drops below watermark, change status to OPEN
                 poolStatus = Status.Open;
-            } else if (totalPoolInvestments >= waterMark) { //If the pool total equals watermark or more, change status to WATERMARKREACHED
+            } else if (totalPoolContributions >= waterMark) { //If the pool total equals watermark or more, change status to WATERMARKREACHED
                 poolStatus = Status.WaterMarkReached;
             }
         }
@@ -176,7 +176,6 @@ contract PoolParty is Ownable {
      * @param _groupDiscountPercent Expected percentage discount that the pool will receive
      * @param _poolPartyOwnerAddress Address to pay the Pool Party fee to
      * @param _dueDiligenceDuration Minimum duration in seconds of the due diligence state
-     * @param _minPurchaseAmount Minimum amount in wei allowed to enter the pool
      * @param _nameService Address of the name service to get the authorized coion address from
      */
     function setPoolParameters(
@@ -185,7 +184,6 @@ contract PoolParty is Ownable {
         uint256 _groupDiscountPercent,
         address _poolPartyOwnerAddress,
         uint256 _dueDiligenceDuration,
-        uint256 _minPurchaseAmount,
         address _nameService
     )
         public
@@ -199,7 +197,6 @@ contract PoolParty is Ownable {
         expectedGroupDiscountPercent = _groupDiscountPercent;
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         dueDiligenceDuration = _dueDiligenceDuration;
-        minPurchaseAmount = _minPurchaseAmount;
         nameService = INameService(_nameService);
 
         poolParticipants = 0;
@@ -231,7 +228,7 @@ contract PoolParty is Ownable {
     /**
 	 * @dev Add funds to the pool. Contract status needs to be 'Open', 'WaterMarkReached' or 'DueDiligence' in order to contribute additional funds
 	 */
-    function addFundsToPool()
+    function addFundsToPool(uint256 _quantity)
         public
         assessWaterMark
         payable
@@ -241,23 +238,25 @@ contract PoolParty is Ownable {
             poolStatus == Status.WaterMarkReached ||
             poolStatus == Status.DueDiligence
         );
-        require(msg.value >= minPurchaseAmount);
+        require(_quantity > 0);
+        require(msg.value == poolPrice.mul(_quantity));
 
-        Investor storage _investor = investors[msg.sender];
+        Participant storage _participant = participants[msg.sender];
 
-        if(_investor.isActive == false) {
+        if(_participant.isActive == false) {
             poolParticipants = poolParticipants.add(1);
-            investorList.push(msg.sender);
-            _investor.isActive = true;
-            _investor.hasClaimedRefund = false;
-            _investor.arrayIndex = investorList.length-1;
+            participantList.push(msg.sender);
+            _participant.isActive = true;
+            _participant.hasClaimedRefund = false;
+            _participant.arrayIndex = participantList.length-1;
         }
 
-        uint256 _amountInvested = msg.value;
-        _investor.investmentAmount = investors[msg.sender].investmentAmount.add(_amountInvested);
-        totalPoolInvestments = totalPoolInvestments.add(_amountInvested);
+        uint256 _amountContributed = msg.value;
+        _participant.amountContributed = participants[msg.sender].amountContributed.add(_amountContributed);
+        _participant.quantity = _participant.quantity.add(_quantity);
+        totalPoolContributions = totalPoolContributions.add(_amountContributed);
 
-        FundsAdded(msg.sender, msg.value, now);
+        FundsAdded(msg.sender, _quantity, msg.value, now);
     }
 
     /**
@@ -267,15 +266,15 @@ contract PoolParty is Ownable {
         public
         assessWaterMark
     {
-        Investor storage _investor = investors[msg.sender];
-        require(_investor.isActive);
-        require(_investor.investmentAmount > 0);
+        Participant storage _participant = participants[msg.sender];
+        require(_participant.isActive);
+        require(_participant.amountContributed > 0);
 
-        uint256 _amountToRefund = _investor.investmentAmount;
-        uint256 _index = _investor.arrayIndex;
-        delete investors[msg.sender];
+        uint256 _amountToRefund = _participant.amountContributed;
+        uint256 _index = _participant.arrayIndex;
+        delete participants[msg.sender];
 
-        totalPoolInvestments = totalPoolInvestments.sub(_amountToRefund);
+        totalPoolContributions = totalPoolContributions.sub(_amountToRefund);
         removeUserFromList(_index);
         poolParticipants = poolParticipants.sub(1);
         FundsWithdrawn(msg.sender, _amountToRefund, now);
@@ -376,34 +375,34 @@ contract PoolParty is Ownable {
 
     /**
      * @dev Allows authorized configuration address to remove users who do not comply with KYC. A small fee is charged to the person being kicked from the pool (only enough to cover gas costs of the transaction)
-     * @param _userToKick Address of the person to kick from the pool.
+     * @param _participantToKick Address of the person to kick from the pool.
      */
-    function kickUser(address _userToKick, KickReason _reason)
+    function kickUser(address _participantToKick, KickReason _reason)
         public
         onlyAuthorizedAddress
     {
         require(poolStatus == Status.InReview);
 
-        Investor storage _investor = investors[_userToKick];
-        uint256 _amountToRefund = _investor.investmentAmount;
-        uint256 _index = _investor.arrayIndex;
+        Participant storage _participant = participants[_participantToKick];
+        uint256 _amountToRefund = _participant.amountContributed;
+        uint256 _index = _participant.arrayIndex;
         require(_amountToRefund > 0);
-        delete investors[_userToKick];
+        delete participants[_participantToKick];
 
         poolParticipants = poolParticipants.sub(1);
         removeUserFromList(_index);
-        totalPoolInvestments = totalPoolInvestments.sub(_amountToRefund);
+        totalPoolContributions = totalPoolContributions.sub(_amountToRefund);
 
-        KickedUser storage _kickedUser = kickedUsers[_userToKick];
+        KickedParticipant storage _kickedUser = kickedParticipants[_participantToKick];
         _kickedUser.hasBeenKicked = true;
         _kickedUser.kickReason = _reason;
 
-        //fee to cover gas costs for being kicked - taken from investor
+        //fee to cover gas costs for being kicked - taken from participant
         uint256 _fee = _amountToRefund < withdrawalFee ? _amountToRefund : withdrawalFee;
-        InvestorKicked(_userToKick, _fee, _amountToRefund.sub(_fee), _reason, now);
+        ParticipantKicked(_participantToKick, _fee, _amountToRefund.sub(_fee), _reason, now);
 
         msg.sender.transfer(_fee);
-        _userToKick.transfer(_amountToRefund.sub(_fee));
+        _participantToKick.transfer(_amountToRefund.sub(_fee));
     }
 
     /**
@@ -418,18 +417,18 @@ contract PoolParty is Ownable {
         require(poolStatus == Status.InReview);
 
         //The fee must be paid by the authorized configuration address
-        uint256 _feeAmount = totalPoolInvestments.mul(feePercentage).div(100);
+        uint256 _feeAmount = totalPoolContributions.mul(feePercentage).div(100);
         uint256 _amountToRelease = 0;
         uint256 _actualSubsidy = 0;
 
         if (subsidyRequired) { //If a subsidy is required, calculate the subsidy amount which should be sent to this function at time of calling
             uint256 _groupContributionPercent = uint256(100).sub(actualGroupDiscountPercent);
-            _amountToRelease = totalPoolInvestments.mul(100).div(_groupContributionPercent);
-            _actualSubsidy = _amountToRelease.sub(totalPoolInvestments);
+            _amountToRelease = totalPoolContributions.mul(100).div(_groupContributionPercent);
+            _actualSubsidy = _amountToRelease.sub(totalPoolContributions);
             require(msg.value >= _actualSubsidy.add(_feeAmount)); //Amount sent to the function should be the subsidy amount + the fee
         } else { //No subsidy, only fee has to be paid
             require(msg.value >= _feeAmount);
-            _amountToRelease = totalPoolInvestments;
+            _amountToRelease = totalPoolContributions;
         }
 
         poolSubsidyAmount = _actualSubsidy;
@@ -488,7 +487,7 @@ contract PoolParty is Ownable {
 
         require(destinationAddress.call(bytes4(hashedRefundFunctionName)));
 
-        if (address(this).balance >= totalPoolInvestments) {
+        if (address(this).balance >= totalPoolContributions) {
             poolStatus = Status.Claim;
             balanceRemainingSnapshot = address(this).balance.sub(poolSubsidyAmount);
             msg.sender.transfer(poolSubsidyAmount); //Return the subsidy amount to the vendor as the pool has no claim to this
@@ -502,27 +501,27 @@ contract PoolParty is Ownable {
      * @dev Called by each pool participant. Tokens are distributed proportionately to how much they contributed.
      */
     function claimTokens() public {
-        Investor storage _investor = investors[msg.sender];
+        Participant storage _participant = participants[msg.sender];
         require(poolStatus == Status.Claim);
-        require(_investor.isActive);
-        require(_investor.investmentAmount > 0);
+        require(_participant.isActive);
+        require(_participant.amountContributed > 0);
 
         var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
-        if (_investor.percentageContribution == 0) {
-            _investor.percentageContribution = _percentageContribution;
-            _investor.refundAmount = _refundAmount;
+        if (_participant.percentageContribution == 0) {
+            _participant.percentageContribution = _percentageContribution;
+            _participant.refundAmount = _refundAmount;
         }
 
         poolTokenBalance = tokenAddress.balanceOf(address(this)); //Get the latest token balance for the pool
 
         require(_tokensDue > 0); //User has to have tokens due to proceed
 
-        _investor.lastAmountTokensClaimed = _tokensDue;
-        _investor.totalTokensClaimed = _investor.totalTokensClaimed.add(_tokensDue); //Increment number of tokens claimed by tokens due for this call
-        _investor.numberOfTokenClaims = _investor.numberOfTokenClaims.add(1);
+        _participant.lastAmountTokensClaimed = _tokensDue;
+        _participant.totalTokensClaimed = _participant.totalTokensClaimed.add(_tokensDue); //Increment number of tokens claimed by tokens due for this call
+        _participant.numberOfTokenClaims = _participant.numberOfTokenClaims.add(1);
         allTokensClaimed = allTokensClaimed.add(_tokensDue); //Increment allTokensClaimed by tokens due
 
-        TokensClaimed(msg.sender, _investor.investmentAmount, _tokensDue, now);
+        TokensClaimed(msg.sender, _participant.amountContributed, _tokensDue, now);
         tokenAddress.transfer(msg.sender, _tokensDue); //Transfer the tokens to the user
     }
 
@@ -531,25 +530,25 @@ contract PoolParty is Ownable {
      * NOTE: This is a 'call once' function - once refund is claimed, it cannot be called again
      */
     function claimRefund() public {
-        Investor storage _investor = investors[msg.sender];
+        Participant storage _participant = participants[msg.sender];
         require(poolStatus == Status.Claim);
-        require(_investor.isActive);
-        require(_investor.investmentAmount > 0);
-        require(!_investor.hasClaimedRefund);
+        require(_participant.isActive);
+        require(_participant.amountContributed > 0);
+        require(!_participant.hasClaimedRefund);
 
-        _investor.hasClaimedRefund = true;
+        _participant.hasClaimedRefund = true;
 
         var(_percentageContribution, _refundAmount,) = calculateParticipationAmounts(msg.sender);
 
-        if (_investor.percentageContribution == 0) {
-            _investor.percentageContribution = _percentageContribution;
-            _investor.refundAmount = _refundAmount;
+        if (_participant.percentageContribution == 0) {
+            _participant.percentageContribution = _percentageContribution;
+            _participant.refundAmount = _refundAmount;
         }
 
-        require(_investor.refundAmount > 0);
+        require(_participant.refundAmount > 0);
 
-        RefundClaimed(msg.sender, _investor.refundAmount, now);
-        msg.sender.transfer(_investor.refundAmount);
+        RefundClaimed(msg.sender, _participant.refundAmount, now);
+        msg.sender.transfer(_participant.refundAmount);
     }
 
     /**
@@ -585,7 +584,7 @@ contract PoolParty is Ownable {
         view
         returns (Status, uint256, uint256, uint256, uint256, uint256)
     {
-        return (poolStatus, totalPoolInvestments, poolParticipants, withdrawalFee, waterMark, reviewPeriodStart);
+        return (poolStatus, totalPoolContributions, poolParticipants, withdrawalFee, waterMark, reviewPeriodStart);
     }
 
     /**
@@ -599,9 +598,9 @@ contract PoolParty is Ownable {
     {
         if (poolStatus != Status.Claim) {return (0, 0, 0, false);}
 
-        Investor storage _investor = investors[_user];
+        Participant storage _participant = participants[_user];
         var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(_user);
-        return (_percentageContribution, _refundAmount, _tokensDue, _investor.hasClaimedRefund);
+        return (_percentageContribution, _refundAmount, _tokensDue, _participant.hasClaimedRefund);
     }
 
     /**
@@ -629,12 +628,12 @@ contract PoolParty is Ownable {
         view
         returns (uint256, uint256, uint256)
     {
-        Investor storage _investor = investors[_user];
+        Participant storage _participant = participants[_user];
         uint256 _poolTokenBalance = tokenAddress.balanceOf(address(this));
         uint256 _lifetimeTokensReceived = _poolTokenBalance + allTokensClaimed;
-        uint256 _percentageContribution = _investor.investmentAmount.mul(100).mul(DECIMAL_PRECISION).div(totalPoolInvestments);
+        uint256 _percentageContribution = _participant.amountContributed.mul(100).mul(DECIMAL_PRECISION).div(totalPoolContributions);
         uint256 _refundAmount = balanceRemainingSnapshot.mul(_percentageContribution).div(100).div(DECIMAL_PRECISION);
-        uint256 _tokensDue = _lifetimeTokensReceived.mul(_percentageContribution).div(100).div(DECIMAL_PRECISION).sub(_investor.totalTokensClaimed);
+        uint256 _tokensDue = _lifetimeTokensReceived.mul(_percentageContribution).div(100).div(DECIMAL_PRECISION).sub(_participant.totalTokensClaimed);
 
         return (_percentageContribution, _refundAmount, _tokensDue);
     }
@@ -645,10 +644,10 @@ contract PoolParty is Ownable {
      * @param _index Index of deleted item
      */
     function removeUserFromList(uint256 _index) internal {
-        investorList[_index] = investorList[investorList.length - 1];
-        investors[investorList[_index]].arrayIndex = _index;
-        delete investorList[investorList.length - 1];
-        investorList.length--;
+        participantList[_index] = participantList[participantList.length - 1];
+        participants[participantList[_index]].arrayIndex = _index;
+        delete participantList[participantList.length - 1];
+        participantList.length--;
     }
 
     /**

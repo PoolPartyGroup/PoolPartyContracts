@@ -42,8 +42,8 @@ contract('PoolParty', (accounts) => {
         const _poolGuid = await poolPartyFactory.partyGuidList(0);
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
-        await poolParty.addFundsToPool({from: _investor4, value: web3.toWei("0.6")});
-        await poolParty.addFundsToPool({from: _investor2, value: web3.toWei("0.4")});
+        await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.5")});
+        await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.5")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
@@ -54,8 +54,8 @@ contract('PoolParty', (accounts) => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
 
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
@@ -94,8 +94,8 @@ contract('PoolParty', (accounts) => {
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
             let contractTokenReceived = await poolParty.poolTokenBalance();
@@ -111,8 +111,8 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should attempt to claim tokens from ICO but get none', async () => {
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.startInReviewPeriod({from: _saleOwner});
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
@@ -137,8 +137,8 @@ contract('PoolParty', (accounts) => {
     describe('Function: claimTokensFromVendor(): Foreground Sale', () => {
         const TOKEN_PRICE = web3.toWei("0.05");
         beforeEach(async () => {
-            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
-            await poolParty.addFundsToPool({from: _investor3, value: web3.toWei("2.2387946")});
+            await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("1")});
+            await poolParty.addFundsToPool(4, {from: _investor3, value: web3.toWei("2")});
             foregroundTokenSale = await foregroundTokenSaleArtifact.new(60, 1, TOKEN_PRICE, _deployer);
             const tokenSaleStartBlockNumber = web3.eth.blockNumber + 1;
             const tokenSaleEndBlockNumber = tokenSaleStartBlockNumber + 500;
@@ -149,8 +149,8 @@ contract('PoolParty', (accounts) => {
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 400000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
         });
@@ -186,35 +186,35 @@ contract('PoolParty', (accounts) => {
         it('should claim refund from failed sale', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
-            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await poolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
+            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await poolParty.totalPoolContributions()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
             assert.equal(await poolParty.poolTokenBalance(), 0, "Should nothave received tokens");
-            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "]");
+            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolContributions()) + "]");
             assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), 0, "Contract balance too high after release funds");
             await poolParty.claimRefundFromVendor({from: _saleOwner});
-            assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), await poolParty.totalPoolInvestments(), "Refund not transferred");
-            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "], Balance remaining snapshot [" + web3.fromWei(await poolParty.balanceRemainingSnapshot()) + "]");
+            assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), await poolParty.totalPoolContributions(), "Refund not transferred");
+            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolContributions()) + "], Balance remaining snapshot [" + web3.fromWei(await poolParty.balanceRemainingSnapshot()) + "]");
         });
 
         it('should attempt to double claim refund from failed sale', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
-            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
-            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await poolParty.totalPoolInvestments()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
+            assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await poolParty.totalPoolContributions()) + parseInt(subsidy)), "Incorrect sale balance after transfer");
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");
             assert.equal(await poolParty.poolTokenBalance(), 0, "Should not have received tokens");
-            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "]");
+            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolContributions()) + "]");
             assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), 0, "Contract balance too high after release funds");
             await poolParty.claimRefundFromVendor({from: _saleOwner});
-            assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), await poolParty.totalPoolInvestments(), "Refund not transferred");
-            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "], Balance remaining snapshot [" + web3.fromWei(await poolParty.balanceRemainingSnapshot()) + "]");
+            assert.equal((web3.eth.getBalance(poolParty.address)).toNumber(), await poolParty.totalPoolContributions(), "Refund not transferred");
+            smartLog("Pool Party Balance [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "], total investment balance [" + web3.fromWei(await poolParty.totalPoolContributions()) + "], Balance remaining snapshot [" + web3.fromWei(await poolParty.balanceRemainingSnapshot()) + "]");
             await expectThrow(poolParty.claimRefundFromVendor({from: _saleOwner}));
         });
     });

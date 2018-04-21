@@ -4,7 +4,7 @@ import {
     sleep,
     calculateSubsidy,
     Status,
-    InvestorStruct,
+    ParticipantStruct,
     Contributions,
     DUE_DILIGENCE_DURATION,
     customSaleArtifact,
@@ -56,34 +56,34 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         
         //ADD FUNDS TO POOL (for each of the 5 participants)
         smartLog("Adding Funds to pool...", true);
-        await poolParty.addFundsToPool({from: investor1, value: web3.toWei("4", "ether")});
-        await poolParty.addFundsToPool({from: investor2, value: web3.toWei("3", "ether")});
-        await poolParty.addFundsToPool({from: investor3, value: web3.toWei("2", "ether")});
-        await poolParty.addFundsToPool({from: investor4, value: web3.toWei("1", "ether")});
-        await poolParty.addFundsToPool({from: investor5, value: web3.toWei("3", "ether")});
-        await poolParty.addFundsToPool({from: investor6, value: web3.toWei("2", "ether")});
-        await poolParty.addFundsToPool({from: investor7, value: web3.toWei("1", "ether")});
+        await poolParty.addFundsToPool(8, {from: investor1, value: web3.toWei("4", "ether")});
+        await poolParty.addFundsToPool(6, {from: investor2, value: web3.toWei("3", "ether")});
+        await poolParty.addFundsToPool(4, {from: investor3, value: web3.toWei("2", "ether")});
+        await poolParty.addFundsToPool(2, {from: investor4, value: web3.toWei("1", "ether")});
+        await poolParty.addFundsToPool(6, {from: investor5, value: web3.toWei("3", "ether")});
+        await poolParty.addFundsToPool(4, {from: investor6, value: web3.toWei("2", "ether")});
+        await poolParty.addFundsToPool(2, {from: investor7, value: web3.toWei("1", "ether")});
         
         smartLog("Confirming investment amounts...", true);
-        let totalInvested = await poolParty.totalPoolInvestments();
+        let totalInvested = await poolParty.totalPoolContributions();
         assert.equal(totalInvested, web3.toWei("16", "ether"), "Incorrect total");
         
-        let investmentAmount = (await poolParty.investors(investor1))[InvestorStruct.investmentAmount];
+        let investmentAmount = (await poolParty.participants(investor1))[ParticipantStruct.amountContributed];
         assert.equal(investmentAmount, web3.toWei("4", "ether"), "Incorrect balance");
         
-        let investmentAmount2 = (await poolParty.investors(investor2))[InvestorStruct.investmentAmount];
+        let investmentAmount2 = (await poolParty.participants(investor2))[ParticipantStruct.amountContributed];
         assert.equal(investmentAmount2, web3.toWei("3", "ether"), "Incorrect balance");
         
-        let investmentAmount3 = (await poolParty.investors(investor3))[InvestorStruct.investmentAmount];
+        let investmentAmount3 = (await poolParty.participants(investor3))[ParticipantStruct.amountContributed];
         assert.equal(investmentAmount3, web3.toWei("2", "ether"), "Incorrect balance");
 
-        let investmentAmount7 = (await poolParty.investors(investor7))[InvestorStruct.investmentAmount];
+        let investmentAmount7 = (await poolParty.participants(investor7))[ParticipantStruct.amountContributed];
         assert.equal(investmentAmount7, web3.toWei("1", "ether"), "Incorrect balance");
 
         //Have investor 3 leave the pool
         smartLog("Having Investor 3 leave the pool...", true);
         await poolParty.leavePool({from: investor3});
-        totalInvested = await poolParty.totalPoolInvestments();
+        totalInvested = await poolParty.totalPoolContributions();
         assert.equal(totalInvested, web3.toWei("14", "ether"), "Incorrect total");
         
         //Set the Authorized Configuration Address
@@ -113,7 +113,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         it("should check the pool's balance", async () => {
             smartLog("Checking pool balance...", true);
-            let totalInvested = await poolParty.totalPoolInvestments();
+            let totalInvested = await poolParty.totalPoolContributions();
             assert.equal(totalInvested, web3.toWei("14", "ether"), "Incorrect total");
         });
 
@@ -126,13 +126,13 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "]");
             let theState = await poolParty.poolStatus();
             smartLog("Pool State should be 3 [" + theState + "]");
-            smartLog("Total pool investments [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "]");
+            smartLog("Total pool investments [" + web3.fromWei(await poolParty.totalPoolContributions()) + "]");
 
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
             let feePercent = await poolParty.feePercentage();
-            let total = await poolParty.totalPoolInvestments();
+            let total = await poolParty.totalPoolContributions();
             let fee = total * feePercent / 100;
             smartLog("Fee [" + web3.fromWei(fee) + "]");
 
@@ -166,13 +166,13 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
             smartLog("Pool Contract Balance BEFORE [" + web3.fromWei(web3.eth.getBalance(poolParty.address)) + "]");
             let theState = await poolParty.poolStatus();
             smartLog("Pool State should be 3 [" + theState + "]");
-            smartLog("Total pool investments [" + web3.fromWei(await poolParty.totalPoolInvestments()) + "]");
+            smartLog("Total pool investments [" + web3.fromWei(await poolParty.totalPoolContributions()) + "]");
 
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolInvestments());
+            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
             let feePercent = await poolParty.feePercentage();
-            let total = await poolParty.totalPoolInvestments();
+            let total = await poolParty.totalPoolContributions();
             let fee = total * feePercent / 100;
             smartLog("Fee [" + web3.fromWei(fee) + "]");
 

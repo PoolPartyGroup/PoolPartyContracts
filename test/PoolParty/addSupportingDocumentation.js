@@ -29,7 +29,7 @@ contract('PoolParty', (accounts) => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
             const _poolGuid = await poolPartyFactory.partyGuidList(0);
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
-            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
+            await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
             await poolParty.addLegalDocumentation("QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: _investor1});
@@ -40,7 +40,7 @@ contract('PoolParty', (accounts) => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: _investor1});
             const _poolGuid = await poolPartyFactory.partyGuidList(0);
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
-            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
+            await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
             await expectThrow(poolParty.addLegalDocumentation("786t96tdsct6c86sc876sc76s87dc687s6c87", {from: _investor1}));
@@ -52,7 +52,7 @@ contract('PoolParty', (accounts) => {
             await poolPartyFactory.createNewPoolParty("icopoolparty.com", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
             const _poolGuid = await poolPartyFactory.partyGuidList(0);
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
-            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
+            await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
             await expectThrow(poolParty.addLegalDocumentation("", {from: _investor1}));
@@ -64,7 +64,7 @@ contract('PoolParty', (accounts) => {
             const _poolGuid = await poolPartyFactory.partyGuidList(0);
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(_poolGuid));
 
-            await poolParty.addFundsToPool({from: _investor1, value: web3.toWei("1")});
+            await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("1")});
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
 
             await expectThrow(poolParty.addLegalDocumentation("QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: _investor3}));
