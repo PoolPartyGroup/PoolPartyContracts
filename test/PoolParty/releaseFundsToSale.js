@@ -32,18 +32,18 @@ contract('PoolParty', (accounts) => {
 
         poolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-        await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
+        await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.04"), web3.toWei("0.05"), "", {from: _investor1});
 
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
 
-        await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.5")});
-        await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.5")});
+        await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
+        await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized with buy and claim function. ', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -51,7 +51,7 @@ contract('PoolParty', (accounts) => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
@@ -63,7 +63,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to release funds using unauthorized account', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await expectThrow(poolParty.releaseFundsToSale({from: _investor3, gas: 300000, value: (subsidy + fee)}));
@@ -71,7 +71,7 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should attempt to release funds before due diligence has passed', async () => {
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await expectThrow(poolParty.releaseFundsToSale({from: _investor3, gas: 300000, value: (subsidy + fee)}));
@@ -90,7 +90,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to release funds only sending subsidy', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
 
             await expectThrow(poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: subsidy}));
             assert.equal(web3.eth.getBalance(customSale.address), 0, "Sale balance should be 0");
@@ -108,7 +108,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to leave pool when funds already released', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (fee + subsidy)});
 
@@ -120,7 +120,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized with automatic claim. ', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -128,7 +128,7 @@ contract('PoolParty', (accounts) => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
@@ -146,7 +146,7 @@ contract('PoolParty', (accounts) => {
             await poolParty.leavePool({from: _investor2});
             assert.equal(await poolParty.totalPoolContributions(), 0, "Pool should have nothing in it");
 
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             assert.equal(subsidy, 0, "Subsidy should be 0");
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             assert.equal(fee, 0, "Fee should be 0");
@@ -159,7 +159,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Non Subsidized with buy and claim function.', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), false, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", false, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -189,14 +189,14 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized Automatic Token Allocation', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
         it('should release funds to subsidized sale and get tokens', async () => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
 
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
@@ -210,15 +210,15 @@ contract('PoolParty', (accounts) => {
             await mockNameService.__callback(web3.sha3("zero.fee.test"), _saleOwner, 0x42);
 
             await poolPartyFactory.setFeePercentage(0);
-            await poolPartyFactory.createNewPoolParty("zero.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
+            await poolPartyFactory.createNewPoolParty("zero.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.04"), web3.toWei("0.05"), "", {from: _investor1});
 
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(1));
 
-            await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.5")});
-            await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.5")});
+            await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
+            await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
             await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -226,7 +226,7 @@ contract('PoolParty', (accounts) => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             assert.equal(fee, 0, "Fee should be 0%");
 
@@ -241,15 +241,15 @@ contract('PoolParty', (accounts) => {
         beforeEach(async () => {
             await mockNameService.__callback(web3.sha3("waive.fee.test"), _saleOwner, 0x42);
 
-            await poolPartyFactory.createNewPoolParty("waive.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
+            await poolPartyFactory.createNewPoolParty("waive.fee.test", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.04"), web3.toWei("0.05"), "", {from: _investor1});
 
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(1));
 
-            await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.5")});
-            await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.5")});
+            await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
+            await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
             await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -259,7 +259,7 @@ contract('PoolParty', (accounts) => {
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
             const ownerSnapshotBalance = web3.eth.getBalance(_deployer);
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
 
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy)});
             assert.equal(web3.eth.getBalance(customSale.address), (parseInt(await poolParty.totalPoolContributions()) + parseInt(subsidy)), "Incorrect sale balance after transfer");

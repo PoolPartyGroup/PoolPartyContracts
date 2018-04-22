@@ -12,7 +12,6 @@ contract PoolPartyFactory is Ownable {
 
     uint256 public feePercentage;
     uint256 public withdrawalFee;
-    uint256 public groupDiscountPercent;
     uint256 public dueDiligenceDuration;
 
     address public poolPartyOwnerAddress;
@@ -37,7 +36,6 @@ contract PoolPartyFactory is Ownable {
         require(_nameServiceAddress != 0x0);
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
-        groupDiscountPercent = 15;
         dueDiligenceDuration = 604800 seconds; //default of 7 days
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         nameServiceAddress = _nameServiceAddress;
@@ -49,6 +47,8 @@ contract PoolPartyFactory is Ownable {
      * @param _poolName Name for the pool
      * @param _poolDescription Description of what the pool is
      * @param _waterMark The minimum amount in wei for the pool to be considered a success
+     * @param _poolPrice The price of the pool - what the participants expect to get
+     * @param _retailPrice The retail price of whats being offered by in the pool
      * @param _legalDocsHash Document/documents associated to the pool (contracts etc). Stored in decentralized storage
      */
     function createNewPoolParty(
@@ -57,6 +57,7 @@ contract PoolPartyFactory is Ownable {
         string _poolDescription,
         uint256 _waterMark,
         uint256 _poolPrice,
+        uint256 _retailPrice,
         bytes _legalDocsHash
     )
         public
@@ -67,9 +68,10 @@ contract PoolPartyFactory is Ownable {
         require(bytes(_poolDescription).length != 0);
         require(_poolPrice > 0);
         require(_waterMark > 0);
+        require(_retailPrice > 0);
 
-        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _legalDocsHash, msg.sender);
-        poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, groupDiscountPercent, poolPartyOwnerAddress, dueDiligenceDuration, nameServiceAddress);
+        PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _retailPrice, _legalDocsHash, msg.sender);
+        poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, poolPartyOwnerAddress, dueDiligenceDuration, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         poolAddresses.push(address(poolPartyContract));
 
@@ -109,18 +111,6 @@ contract PoolPartyFactory is Ownable {
         withdrawalFee = _withdrawalFee;
 
         WithdrawalFeeUpdate(msg.sender, _oldValue, _withdrawalFee, now);
-    }
-
-    /**
-     * @dev Set the discount percentage for the pool - this is the percentage discount the group will get by participating in the pool
-     * @param _discountPercent The new percentage discount
-     */
-    function setGroupPurchaseDiscountPercentage(uint256 _discountPercent) public onlyOwner {
-        require(_discountPercent <= 100);
-        uint256 _oldValue = groupDiscountPercent;
-        groupDiscountPercent = _discountPercent;
-
-        GroupDiscountPercentageUpdate(msg.sender, _oldValue, _discountPercent, now);
     }
 
     /**

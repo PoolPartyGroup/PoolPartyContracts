@@ -46,12 +46,12 @@ contract('Pool Party ICO', function (accounts) {
         });
 
         it("should create new Pool Party", async () => {
-            const tx = await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), "", {from:_investor1});
+            const tx = await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), web3.toWei("0.8"), "", {from:_investor1});
             smartLog(tx);
             poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
             smartLog("Foreground Pool Party Address [" + poolParty.address + "]");
 
-            await poolPartyFactory.createNewPoolParty("themktplace.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), "");
+            await poolPartyFactory.createNewPoolParty("themktplace.io", "Pool name", "Pool description", web3.toWei("15"), web3.toWei("0.5"), web3.toWei("0.8"), "");
             const poolPartyContract2 = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(1));
 
             smartLog("MKT.place Party Address [" + poolPartyContract2.address + "]");
@@ -113,7 +113,7 @@ contract('Pool Party ICO', function (accounts) {
         });
 
         it("should configure pool details", async () => {
-            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _investor7});
+            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _investor7});
             assert.equal(await poolParty.buyFunctionName(), "N/A", "Wrong buyFunctionName");
         });
 
@@ -153,7 +153,7 @@ contract('Pool Party ICO', function (accounts) {
             await foregroundTokenSale.updateLatestSaleState({from: _investor6});
             smartLog("Sale State is [" + await foregroundTokenSale.state() + "]");
 
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
             const feePercent = await poolParty.feePercentage();

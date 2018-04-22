@@ -35,13 +35,13 @@ contract('PoolParty', (accounts) => {
 
         poolPartyFactory = await poolPartyFactoryArtifact.new(_deployer, mockNameService.address, {from: _deployer});
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-        await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.5"), "", {from: _investor1});
+        await poolPartyFactory.createNewPoolParty("api.test.foreground.io", "Pool name", "Pool description", web3.toWei("1"), web3.toWei("0.04"), web3.toWei("0.05"), "", {from: _investor1});
 
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(0));
 
-        await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("1")});
-        await poolParty.addFundsToPool(3, {from: _investor2, value: web3.toWei("1.5")});
-        await poolParty.addFundsToPool(2, {from: _investor3, value: web3.toWei("1")});
+        await poolParty.addFundsToPool(25, {from: _investor4, value: web3.toWei("1")});
+        await poolParty.addFundsToPool(38, {from: _investor2, value: web3.toWei("1.52")});
+        await poolParty.addFundsToPool(25, {from: _investor3, value: web3.toWei("1")});
         await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
@@ -51,11 +51,11 @@ contract('PoolParty', (accounts) => {
             customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: _deployer});
             await genericToken.transferOwnership(customSale.address, {from: _deployer});
 
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 300000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.Claim, "Pool in incorrect status");
@@ -95,11 +95,11 @@ contract('PoolParty', (accounts) => {
             await foregroundTokenSale.configureSale(tokenSaleStartBlockNumber, tokenSaleEndBlockNumber, _foregroundSaleAddresses, 50, _foregroundSaleAddresses, _foregroundSaleAddresses, _foregroundSaleAddresses, _foregroundSaleAddresses, {from: _deployer});
             dealToken = dealTokenArtifact.at(await foregroundTokenSale.dealToken());
 
-            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", web3.toWei("0.05"), web3.toWei("0.04"), true, {from: _saleOwner});
+            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             const fee = calculateFee(await poolParty.feePercentage(), await poolParty.totalPoolContributions());
             await poolParty.releaseFundsToSale({from: _saleOwner, gas: 400000, value: (subsidy + fee)});
             assert.equal(await poolParty.poolStatus(), Status.InReview, "Pool in incorrect status");

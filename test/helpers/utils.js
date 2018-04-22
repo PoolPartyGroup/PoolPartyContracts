@@ -1,8 +1,6 @@
 export const FactoryDefaultConfig = {
     FeePercentage: 6,
-    WithdrawlFee: web3.toWei("0.0015"),
-    GroupDiscountPercent: 15,
-    WaterMark: web3.toWei("15")
+    WithdrawlFee: web3.toWei("0.0015")
 };
 export const Status = {
     Open: 0,

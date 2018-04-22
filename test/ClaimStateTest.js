@@ -46,19 +46,19 @@ contract('ICO Pool Party', function (accounts) {
         //CREATE A NEW POOL
         smartLog("Creating new pool...", true);
         await poolPartyFactory.setDueDiligenceDuration(DUE_DILIGENCE_DURATION/1000);
-        await poolPartyFactory.createNewPoolParty("testDomain" + domainIndex + ".io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.5"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: deployer});
+        await poolPartyFactory.createNewPoolParty("testDomain" + domainIndex + ".io", "Pool name", "Pool description", web3.toWei("10"), web3.toWei("0.04"), web3.toWei("0.05"), "QmNd7C8BwUqfhfq6xyRRMzxk1v3dALQjDxwBg4yEJkU24D", {from: deployer});
         poolParty = poolPartyArtifact.at(await poolPartyFactory.poolAddresses(domainIndex));
         domainIndex++;
         
         //ADD FUNDS TO POOL (for each of the 5 participants)
         smartLog("Adding Funds to pool...", true);
-        await poolParty.addFundsToPool(8, {from: investor1, value: web3.toWei("4", "ether")});
-        await poolParty.addFundsToPool(6, {from: investor2, value: web3.toWei("3", "ether")});
-        await poolParty.addFundsToPool(4, {from: investor3, value: web3.toWei("2", "ether")});
-        await poolParty.addFundsToPool(2, {from: investor4, value: web3.toWei("1", "ether")});
-        await poolParty.addFundsToPool(6, {from: investor5, value: web3.toWei("3", "ether")});
-        await poolParty.addFundsToPool(4, {from: investor6, value: web3.toWei("2", "ether")});
-        await poolParty.addFundsToPool(2, {from: investor7, value: web3.toWei("1", "ether")});
+        await poolParty.addFundsToPool(100, {from: investor1, value: web3.toWei("4", "ether")});
+        await poolParty.addFundsToPool(75, {from: investor2, value: web3.toWei("3", "ether")});
+        await poolParty.addFundsToPool(50, {from: investor3, value: web3.toWei("2", "ether")});
+        await poolParty.addFundsToPool(25, {from: investor4, value: web3.toWei("1", "ether")});
+        await poolParty.addFundsToPool(75, {from: investor5, value: web3.toWei("3", "ether")});
+        await poolParty.addFundsToPool(50, {from: investor6, value: web3.toWei("2", "ether")});
+        await poolParty.addFundsToPool(25, {from: investor7, value: web3.toWei("1", "ether")});
         
         smartLog("Confirming investment amounts...", true);
         let totalInvested = await poolParty.totalPoolContributions();
@@ -107,7 +107,7 @@ contract('ICO Pool Party', function (accounts) {
 
         async function ConfigurePoolDetails(){
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: investor7});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: investor7});
             assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
         }
         
@@ -129,7 +129,7 @@ contract('ICO Pool Party', function (accounts) {
             smartLog("Pool State should be 3 [" + theState + "]");
             smartLog("Total pool investments [" + web3.fromWei(await poolParty.totalPoolContributions()) + "]");
 
-            const subsidy = calculateSubsidy(await poolParty.actualGroupDiscountPercent(), await poolParty.totalPoolContributions());
+            const subsidy = calculateSubsidy(await poolParty.discountPercent(), await poolParty.totalPoolContributions());
             smartLog("Subsidy is [" + web3.fromWei(subsidy) + "]");
 
             let feePercent = await poolParty.feePercentage();
@@ -151,7 +151,7 @@ contract('ICO Pool Party', function (accounts) {
 
         it("should not be able to claim refund twice", async () => {            
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", web3.toWei("0.05"), web3.toWei("0.04"),true, {from: investor7});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", true, {from: investor7});
             assert.equal(await poolParty.buyFunctionName(), "buyWithIntentToRefund()", "Wrong buyFunctionName");
 
             await CompleteConfiguration();

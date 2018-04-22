@@ -29,19 +29,15 @@ contract PoolParty is Ownable {
 
     uint256 public waterMark;
     uint256 public poolPrice;
+    uint256 public retailPrice;
     uint256 public feePercentage;
     uint256 public withdrawalFee;
-    uint256 public expectedGroupDiscountPercent;
-    uint256 public expectedGroupTokenPrice;
-    uint256 public publicEthPricePerToken;
-    uint256 public groupEthPricePerToken;
-    uint256 public actualGroupDiscountPercent;
+    uint256 public discountPercent;
     uint256 public totalPoolContributions;
     uint256 public poolTokenBalance;
     uint256 public poolParticipants;
     uint256 public reviewPeriodStart;
     uint256 public balanceRemainingSnapshot;
-    uint256 public tokenPrecision;
     uint256 public dueDiligenceDuration;
     uint256 public poolSubsidyAmount;
     uint256 public allTokensClaimed;
@@ -52,7 +48,6 @@ contract PoolParty is Ownable {
     address public poolCreator;
 
     bool public subsidyRequired;
-    bool public configUrlRequiresWww;
     bool public feeWaived;
     bool poolParamsSet;
 
@@ -101,7 +96,7 @@ contract PoolParty is Ownable {
     event ParticipantKicked(address indexed participant, uint256 fee, uint256 amount, KickReason reason, uint256 date);
     event RefundClaimed(address indexed participant, uint256 amount, uint256 date);
     event AuthorizedAddressConfigured(address initiator, uint256 date);
-    event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, uint256 publicTokenPrice, uint256 groupTokenPrice, bool subsidy, uint256 date);
+    event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, bool subsidy, uint256 date);
 
     event ClaimedTokensFromVendor(address indexed owner, uint256 tokenBalance, uint256 date);
     event ClaimedRefundFromVendor(address indexed owner, address initiator, uint256 refundedAmount, uint256 date);
@@ -144,6 +139,8 @@ contract PoolParty is Ownable {
      * @param _poolName Name for the pool
      * @param _poolDescription Description of what the pool is
      * @param _waterMark Minimum amount in wei the pool has to reach in order for funds to be released to sale contract
+     * @param _poolPrice The price of the pool - what the participants expect to get
+     * @param _retailPrice The retail price of whats being offered by in the pool
      * @param _docsLocationHash (Optional) Document/documents associated to the pool (contracts etc). Stored in decentralized storage
      * @param _poolCreator The creator of the pool
      */
@@ -153,6 +150,7 @@ contract PoolParty is Ownable {
         string _poolDescription,
         uint256 _waterMark,
         uint256 _poolPrice,
+        uint256 _retailPrice,
         bytes _docsLocationHash,
         address _poolCreator
     )
@@ -163,8 +161,10 @@ contract PoolParty is Ownable {
         poolDescription = _poolDescription;
         waterMark = _waterMark;
         poolPrice = _poolPrice;
+        retailPrice = _retailPrice;
         legalDocsHash = _docsLocationHash;
         poolCreator = _poolCreator;
+        discountPercent = (retailPrice.sub(poolPrice)).mul(100).div(retailPrice);
 
         PoolCreated(rootDomain, poolCreator, now);
     }
@@ -173,7 +173,6 @@ contract PoolParty is Ownable {
      * @dev Sets the pool parameters straight after creation, can only be set once and only called by the initial owner of the contract (the Factory)
      * @param _feePercentage Fee percentage for using Pool Party
      * @param _withdrawalFee Fee charged for kicking a participant
-     * @param _groupDiscountPercent Expected percentage discount that the pool will receive
      * @param _poolPartyOwnerAddress Address to pay the Pool Party fee to
      * @param _dueDiligenceDuration Minimum duration in seconds of the due diligence state
      * @param _nameService Address of the name service to get the authorized coion address from
@@ -181,7 +180,6 @@ contract PoolParty is Ownable {
     function setPoolParameters(
         uint256 _feePercentage,
         uint256 _withdrawalFee,
-        uint256 _groupDiscountPercent,
         address _poolPartyOwnerAddress,
         uint256 _dueDiligenceDuration,
         address _nameService
@@ -194,7 +192,6 @@ contract PoolParty is Ownable {
 
         feePercentage = _feePercentage;
         withdrawalFee = _withdrawalFee;
-        expectedGroupDiscountPercent = _groupDiscountPercent;
         poolPartyOwnerAddress = _poolPartyOwnerAddress;
         dueDiligenceDuration = _dueDiligenceDuration;
         nameService = INameService(_nameService);
@@ -299,8 +296,6 @@ contract PoolParty is Ownable {
      * @param _buyFnName Name of the buy function in the "sale" contract
      * @param _claimFnName Name of the claim tokens function in the "sale" contract
      * @param _refundFnName Name of the claim refund function in the "sale" contract
-     * @param _publicTokenPrice Price of the token if bought directly from the ICO
-     * @param _groupTokenPrice Discounted price of the token for participants in the pool
      * @param _subsidy Whether a subsidy amount is due when releasing the funds
      */
     function configurePool(
@@ -309,8 +304,6 @@ contract PoolParty is Ownable {
         string _buyFnName,
         string _claimFnName,
         string _refundFnName,
-        uint256 _publicTokenPrice,
-        uint256 _groupTokenPrice,
         bool _subsidy
     )
         public
@@ -322,9 +315,7 @@ contract PoolParty is Ownable {
             _tokenAddress != 0x0 &&
             bytes(_buyFnName).length > 0 &&
             bytes(_refundFnName).length > 0 &&
-            bytes(_claimFnName).length > 0 &&
-            _publicTokenPrice > 0 &&
-            _groupTokenPrice > 0
+            bytes(_claimFnName).length > 0
         );
 
         destinationAddress = _destination;
@@ -335,11 +326,9 @@ contract PoolParty is Ownable {
         hashedRefundFunctionName = keccak256(refundFunctionName);
         claimFunctionName = _claimFnName;
         hashedClaimFunctionName = keccak256(claimFunctionName);
-        publicEthPricePerToken = _publicTokenPrice;
-        groupEthPricePerToken = _groupTokenPrice;
         subsidyRequired = _subsidy;
 
-        PoolConfigured(msg.sender, _destination, _tokenAddress, _buyFnName, _claimFnName, _refundFnName, _publicTokenPrice, _groupTokenPrice, _subsidy, now);
+        PoolConfigured(msg.sender, _destination, _tokenAddress, _buyFnName, _claimFnName, _refundFnName, _subsidy, now);
     }
 
 
@@ -355,18 +344,8 @@ contract PoolParty is Ownable {
             address(tokenAddress) != 0x0 &&
             hashedBuyFunctionName != 0x0 &&
             hashedRefundFunctionName != 0x0 &&
-            hashedClaimFunctionName != 0x0 &&
-            publicEthPricePerToken > 0 &&
-            groupEthPricePerToken > 0
+            hashedClaimFunctionName != 0x0
         );
-        //Check that the configured token price is at least the expected percentage off
-        expectedGroupTokenPrice = publicEthPricePerToken.sub(publicEthPricePerToken.mul(expectedGroupDiscountPercent).div(100));
-        require (expectedGroupTokenPrice >= groupEthPricePerToken);
-
-        uint8 decimals = tokenAddress.decimals();
-        tokenPrecision = power(10, decimals);
-
-        actualGroupDiscountPercent = (publicEthPricePerToken.sub(groupEthPricePerToken)).mul(100).div(publicEthPricePerToken);
 
         poolStatus = Status.DueDiligence;
         reviewPeriodStart = now;
@@ -422,7 +401,7 @@ contract PoolParty is Ownable {
         uint256 _actualSubsidy = 0;
 
         if (subsidyRequired) { //If a subsidy is required, calculate the subsidy amount which should be sent to this function at time of calling
-            uint256 _groupContributionPercent = uint256(100).sub(actualGroupDiscountPercent);
+            uint256 _groupContributionPercent = uint256(100).sub(discountPercent);
             _amountToRelease = totalPoolContributions.mul(100).div(_groupContributionPercent);
             _actualSubsidy = _amountToRelease.sub(totalPoolContributions);
             require(msg.value >= _actualSubsidy.add(_feeAmount)); //Amount sent to the function should be the subsidy amount + the fee
@@ -571,9 +550,9 @@ contract PoolParty is Ownable {
     function getConfigDetails()
         public
         view
-        returns (address, address, address, uint256, uint256, bool, string, string, string)
+        returns (address, address, address, bool, string, string, string)
     {
-        return (destinationAddress, tokenAddress, authorizedConfigurationAddress, publicEthPricePerToken, groupEthPricePerToken, subsidyRequired, buyFunctionName, refundFunctionName, claimFunctionName);
+        return (destinationAddress, tokenAddress, authorizedConfigurationAddress, subsidyRequired, buyFunctionName, refundFunctionName, claimFunctionName);
     }
 
     /**
@@ -648,12 +627,5 @@ contract PoolParty is Ownable {
         participants[participantList[_index]].arrayIndex = _index;
         delete participantList[participantList.length - 1];
         participantList.length--;
-    }
-
-    /**
-     * @dev Set precision based on decimal places in the token
-     */
-    function power(uint256 _a, uint256 _b) internal pure returns (uint256) {
-        return _a ** _b;
     }
 }
