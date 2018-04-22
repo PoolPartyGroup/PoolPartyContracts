@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.23;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./GenericToken.sol";
@@ -16,7 +16,7 @@ contract CustomSale is Ownable {
         require(address(this).delegatecall(bytes4(keccak256("buy()"))));
     }
 
-    function CustomSale(uint256 _tokenPrice, address _token) public {
+    constructor(uint256 _tokenPrice, address _token) public {
         tokenPrice = _tokenPrice;
         token = GenericToken(_token);
     }

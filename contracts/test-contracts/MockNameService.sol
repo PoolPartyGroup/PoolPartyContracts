@@ -1,12 +1,14 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 contract MockNameService {
     mapping(bytes32 => address) public hashedStringResolutions;
+    bytes proof;
 
-    function MockNameService() public {}
+    constructor() public {}
 
     function __callback(bytes32 _nameHash, string _mappedAddress, bytes _proof) public {
         hashedStringResolutions[_nameHash] = parseAddr(_mappedAddress);
+        proof = _proof;
     }
 
     function parseAddr(string _a) internal pure returns (address){

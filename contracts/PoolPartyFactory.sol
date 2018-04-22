@@ -1,11 +1,11 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.23;
 
 import "./PoolParty.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /**
  * @title PoolPartyFactory
- * @dev Factory to create individual Pool Party contracts. Controls default value that pools are created with
+ * @dev Factory to create individual Pool Party contracts. Controls default values that pools are created with
  * @author - Shane van Coller
  */
 contract PoolPartyFactory is Ownable {
@@ -22,18 +22,15 @@ contract PoolPartyFactory is Ownable {
     event PoolPartyCreated(address indexed poolAddress, address indexed creator, string poolUrl, uint256 date);
     event FeePercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event WithdrawalFeeUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
-    event GroupDiscountPercentageUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
-    event WaterMarkUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
     event DueDiligenceDurationUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
-    event MinOraclizeFeeUpdate(address indexed updater, uint256 oldValue, uint256 newValue, uint256 date);
 
     /**
      * @dev Constructor for the Pool Party Factory
      * @param _poolPartyOwnerAddress Account that the fee for the pool party service goes to
      */
-    function PoolPartyFactory(address _poolPartyOwnerAddress, address _nameServiceAddress) public {
-        require(_poolPartyOwnerAddress != 0x0);
-        require(_nameServiceAddress != 0x0);
+    constructor(address _poolPartyOwnerAddress, address _nameServiceAddress) public {
+        require(_poolPartyOwnerAddress != 0x0, "Pool Party owner address is 0x0");
+        require(_nameServiceAddress != 0x0, "Name service address is 0x0");
         feePercentage = 6;
         withdrawalFee = 0.0015 ether;
         dueDiligenceDuration = 604800 seconds; //default of 7 days
@@ -63,19 +60,19 @@ contract PoolPartyFactory is Ownable {
         public
     {
         //Validate non empty inputs
-        require(bytes(_rootDomain).length != 0);
-        require(bytes(_poolName).length != 0);
-        require(bytes(_poolDescription).length != 0);
-        require(_poolPrice > 0);
-        require(_waterMark > 0);
-        require(_retailPrice > 0);
+        require(bytes(_rootDomain).length != 0, "Root domain is empty");
+        require(bytes(_poolName).length != 0, "Pool Name is empty");
+        require(bytes(_poolDescription).length != 0, "Pool description is empty");
+        require(_poolPrice > 0, "Pool price is 0");
+        require(_waterMark > 0, "WaterMark is 0");
+        require(_retailPrice > 0, "Retail price is 0");
 
         PoolParty poolPartyContract = new PoolParty(_rootDomain, _poolName, _poolDescription, _waterMark, _poolPrice, _retailPrice, _legalDocsHash, msg.sender);
         poolPartyContract.setPoolParameters(feePercentage, withdrawalFee, poolPartyOwnerAddress, dueDiligenceDuration, nameServiceAddress);
         poolPartyContract.transferOwnership(owner);
         poolAddresses.push(address(poolPartyContract));
 
-        PoolPartyCreated(poolPartyContract, msg.sender, _rootDomain, now);
+        emit PoolPartyCreated(poolPartyContract, msg.sender, _rootDomain, now);
     }
 
     /**
@@ -95,11 +92,11 @@ contract PoolPartyFactory is Ownable {
      * @param _feePercentage The new fee as a percentage
      */
     function setFeePercentage(uint256 _feePercentage) public onlyOwner {
-        require(_feePercentage <= 50);
+        require(_feePercentage <= 50, "Fee percent is greater than 50%");
         uint256 _oldValue = feePercentage;
         feePercentage = _feePercentage;
 
-        FeePercentageUpdate(msg.sender, _oldValue, _feePercentage, now);
+        emit FeePercentageUpdate(msg.sender, _oldValue, _feePercentage, now);
     }
 
     /**
@@ -110,7 +107,7 @@ contract PoolPartyFactory is Ownable {
         uint256 _oldValue = withdrawalFee;
         withdrawalFee = _withdrawalFee;
 
-        WithdrawalFeeUpdate(msg.sender, _oldValue, _withdrawalFee, now);
+        emit WithdrawalFeeUpdate(msg.sender, _oldValue, _withdrawalFee, now);
     }
 
     /**
@@ -118,11 +115,11 @@ contract PoolPartyFactory is Ownable {
      * @param _dueDiligenceDurationInSeconds The new duration in seconds
      */
     function setDueDiligenceDuration(uint256 _dueDiligenceDurationInSeconds) public onlyOwner {
-        require(_dueDiligenceDurationInSeconds > 0);
+        require(_dueDiligenceDurationInSeconds > 0, "Due diligence duration is 0");
         uint256 _oldValue = dueDiligenceDuration;
         dueDiligenceDuration = _dueDiligenceDurationInSeconds * 1 seconds;
 
-        DueDiligenceDurationUpdate(msg.sender, _oldValue, dueDiligenceDuration, now);
+        emit DueDiligenceDurationUpdate(msg.sender, _oldValue, dueDiligenceDuration, now);
     }
 
     /**
@@ -130,7 +127,7 @@ contract PoolPartyFactory is Ownable {
      * @param _newOwner Address of the new owner
      */
     function setPoolPartyOwnerAddress(address _newOwner) public onlyOwner {
-        require(_newOwner != 0x0);
+        require(_newOwner != 0x0, "Pool Party owner address is 0x0");
         poolPartyOwnerAddress = _newOwner;
     }
 }
