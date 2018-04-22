@@ -23,13 +23,10 @@
     "dotenv": "2.0.0",
     "eslint": "^4.16.0",
     "eslint-config-standard": "^11.0.0-beta.0",
-    "eslint-loader": "1.6.0",
     "eslint-plugin-flowtype": "2.21.0",
     "eslint-plugin-import": "^2.8.0",
-    "eslint-plugin-jsx-a11y": "2.2.3",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.6.0",
-    "eslint-plugin-react": "6.4.1",
     "eslint-plugin-standard": "^3.0.1",
     "extract-text-webpack-plugin": "1.0.1",
     "file-loader": "0.9.0",
@@ -57,8 +54,5 @@
     "webpack-manifest-plugin": "1.1.0",
     "whatwg-fetch": "1.0.0",
     "zeppelin-solidity": "^1.4.0"
-  },
-  "dependencies": {
-    "dotenv": "^2.0.0"
   }
 }

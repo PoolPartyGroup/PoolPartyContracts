@@ -1,0 +1,10 @@
+{
+  "nameService": {
+    "address": "0x0",
+    "deployNameService": false,
+    "deployMockService": true
+  },
+  "testContract": {
+    "deployTestContracts": true
+  }
+}
