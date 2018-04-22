@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.23;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
@@ -121,7 +121,7 @@ contract PoolParty is Ownable {
      * @dev Only allow the authorized address to execute a function
      */
     modifier onlyAuthorizedAddress {
-        require (authorizedConfigurationAddress != 0x0 && msg.sender == authorizedConfigurationAddress);
+        require (authorizedConfigurationAddress != 0x0 && msg.sender == authorizedConfigurationAddress, "Only authorized configuration address");
         _;
     }
 
@@ -129,7 +129,7 @@ contract PoolParty is Ownable {
      * @dev Only allow the pool creator address to execute a function
      */
     modifier onlyPoolCreator {
-        require (poolCreator != 0x0 && msg.sender == poolCreator);
+        require (poolCreator != 0x0 && msg.sender == poolCreator, "Only pool creator");
         _;
     }
 
@@ -144,7 +144,7 @@ contract PoolParty is Ownable {
      * @param _docsLocationHash (Optional) Document/documents associated to the pool (contracts etc). Stored in decentralized storage
      * @param _poolCreator The creator of the pool
      */
-    function PoolParty(
+    constructor(
         string _rootDomain,
         string _poolName,
         string _poolDescription,
@@ -166,7 +166,7 @@ contract PoolParty is Ownable {
         poolCreator = _poolCreator;
         discountPercent = (retailPrice.sub(poolPrice)).mul(100).div(retailPrice);
 
-        PoolCreated(rootDomain, poolCreator, now);
+        emit PoolCreated(rootDomain, poolCreator, now);
     }
 
     /**
@@ -187,7 +187,7 @@ contract PoolParty is Ownable {
         public
         onlyOwner
     {
-        require(!poolParamsSet);
+        require(!poolParamsSet, "Pool parameters already set");
         poolParamsSet = true;
 
         feePercentage = _feePercentage;
@@ -200,7 +200,7 @@ contract PoolParty is Ownable {
         reviewPeriodStart = 0;
         feeWaived = false;
 
-        PoolParametersSet(rootDomain, now);
+        emit PoolParametersSet(rootDomain, now);
     }
 
     /**
@@ -217,8 +217,8 @@ contract PoolParty is Ownable {
         public
         onlyPoolCreator
     {
-        require(_docsLocationHash.length > 0);
-        require(legalDocsHash.length == 0);
+        require(_docsLocationHash.length > 0, "Location hash is 0x0");
+        require(legalDocsHash.length == 0, "Legal documents have already been submitted");
         legalDocsHash = _docsLocationHash;
     }
 
@@ -233,10 +233,11 @@ contract PoolParty is Ownable {
         require( //Can only add funds until the pool is 'InReview' state
             poolStatus == Status.Open ||
             poolStatus == Status.WaterMarkReached ||
-            poolStatus == Status.DueDiligence
+            poolStatus == Status.DueDiligence,
+            "Pool is in the incorrect state to add funds"
         );
-        require(_quantity > 0);
-        require(msg.value == poolPrice.mul(_quantity));
+        require(_quantity > 0, "Quantity is 0");
+        require(msg.value == poolPrice.mul(_quantity), "Value sent is not correct based on quantity selected");
 
         Participant storage _participant = participants[msg.sender];
 
@@ -253,7 +254,7 @@ contract PoolParty is Ownable {
         _participant.quantity = _participant.quantity.add(_quantity);
         totalPoolContributions = totalPoolContributions.add(_amountContributed);
 
-        FundsAdded(msg.sender, _quantity, msg.value, now);
+        emit FundsAdded(msg.sender, _quantity, msg.value, now);
     }
 
     /**
@@ -264,8 +265,8 @@ contract PoolParty is Ownable {
         assessWaterMark
     {
         Participant storage _participant = participants[msg.sender];
-        require(_participant.isActive);
-        require(_participant.amountContributed > 0);
+        require(_participant.isActive, "Participant is not active");
+        require(_participant.amountContributed > 0, "Participant contribution is 0");
 
         uint256 _amountToRefund = _participant.amountContributed;
         uint256 _index = _participant.arrayIndex;
@@ -274,7 +275,7 @@ contract PoolParty is Ownable {
         totalPoolContributions = totalPoolContributions.sub(_amountToRefund);
         removeUserFromList(_index);
         poolParticipants = poolParticipants.sub(1);
-        FundsWithdrawn(msg.sender, _amountToRefund, now);
+        emit FundsWithdrawn(msg.sender, _amountToRefund, now);
 
         msg.sender.transfer(_amountToRefund);
     }
@@ -283,10 +284,10 @@ contract PoolParty is Ownable {
      * @dev Name Service call to get the authorized configuration address
      */
     function setAuthorizedConfigurationAddress() public {
-        require(poolStatus == Status.WaterMarkReached);
+        require(poolStatus == Status.WaterMarkReached, "Pool state is not 'WaterMarkReached'");
 
         authorizedConfigurationAddress = nameService.hashedStringResolutions(keccak256(rootDomain));
-        AuthorizedAddressConfigured(msg.sender, now);
+        emit AuthorizedAddressConfigured(msg.sender, now);
     }
 
     /**
@@ -309,13 +310,14 @@ contract PoolParty is Ownable {
         public
         onlyAuthorizedAddress
     {
-        require(poolStatus == Status.WaterMarkReached);
+        require(poolStatus == Status.WaterMarkReached, "Pool state is not 'WaterMarkReached'");
         require(
             _destination != 0x0 &&
             _tokenAddress != 0x0 &&
             bytes(_buyFnName).length > 0 &&
             bytes(_refundFnName).length > 0 &&
-            bytes(_claimFnName).length > 0
+            bytes(_claimFnName).length > 0,
+            "All input values should be non 0"
         );
 
         destinationAddress = _destination;
@@ -328,7 +330,7 @@ contract PoolParty is Ownable {
         hashedClaimFunctionName = keccak256(claimFunctionName);
         subsidyRequired = _subsidy;
 
-        PoolConfigured(msg.sender, _destination, _tokenAddress, _buyFnName, _claimFnName, _refundFnName, _subsidy, now);
+        emit PoolConfigured(msg.sender, _destination, _tokenAddress, _buyFnName, _claimFnName, _refundFnName, _subsidy, now);
     }
 
 
@@ -344,12 +346,13 @@ contract PoolParty is Ownable {
             address(tokenAddress) != 0x0 &&
             hashedBuyFunctionName != 0x0 &&
             hashedRefundFunctionName != 0x0 &&
-            hashedClaimFunctionName != 0x0
+            hashedClaimFunctionName != 0x0,
+            "Pool has not been configured"
         );
 
         poolStatus = Status.DueDiligence;
         reviewPeriodStart = now;
-        SaleDetailsConfigured(msg.sender, now);
+        emit SaleDetailsConfigured(msg.sender, now);
     }
 
     /**
@@ -360,12 +363,12 @@ contract PoolParty is Ownable {
         public
         onlyAuthorizedAddress
     {
-        require(poolStatus == Status.InReview);
+        require(poolStatus == Status.InReview, "Pool state is not 'InReview'");
 
         Participant storage _participant = participants[_participantToKick];
         uint256 _amountToRefund = _participant.amountContributed;
         uint256 _index = _participant.arrayIndex;
-        require(_amountToRefund > 0);
+        require(_amountToRefund > 0, "Refund amount is 0");
         delete participants[_participantToKick];
 
         poolParticipants = poolParticipants.sub(1);
@@ -378,7 +381,7 @@ contract PoolParty is Ownable {
 
         //fee to cover gas costs for being kicked - taken from participant
         uint256 _fee = _amountToRefund < withdrawalFee ? _amountToRefund : withdrawalFee;
-        ParticipantKicked(_participantToKick, _fee, _amountToRefund.sub(_fee), _reason, now);
+        emit ParticipantKicked(_participantToKick, _fee, _amountToRefund.sub(_fee), _reason, now);
 
         msg.sender.transfer(_fee);
         _participantToKick.transfer(_amountToRefund.sub(_fee));
@@ -393,7 +396,7 @@ contract PoolParty is Ownable {
         onlyAuthorizedAddress
         payable
     {
-        require(poolStatus == Status.InReview);
+        require(poolStatus == Status.InReview, "Pool state is not 'InReview'");
 
         //The fee must be paid by the authorized configuration address
         uint256 _feeAmount = totalPoolContributions.mul(feePercentage).div(100);
@@ -404,9 +407,9 @@ contract PoolParty is Ownable {
             uint256 _groupContributionPercent = uint256(100).sub(discountPercent);
             _amountToRelease = totalPoolContributions.mul(100).div(_groupContributionPercent);
             _actualSubsidy = _amountToRelease.sub(totalPoolContributions);
-            require(msg.value >= _actualSubsidy.add(_feeAmount)); //Amount sent to the function should be the subsidy amount + the fee
+            require(msg.value >= _actualSubsidy.add(_feeAmount), "Value sent is not correct based on subsidy and fee amounts"); //Amount sent to the function should be the subsidy amount + the fee
         } else { //No subsidy, only fee has to be paid
-            require(msg.value >= _feeAmount);
+            require(msg.value >= _feeAmount, "Value sent is not correct based on the fee");
             _amountToRelease = totalPoolContributions;
         }
 
@@ -417,9 +420,9 @@ contract PoolParty is Ownable {
 
         //Release funds to sale contract
         if (hashedBuyFunctionName == keccak256("N/A")) { //Call fallback function
-            require(destinationAddress.call.gas(300000).value(_amountToRelease)());
+            require(destinationAddress.call.gas(300000).value(_amountToRelease)(), "Call to vendor fallback function failed");
         } else { //Call function specified during creation
-            require(destinationAddress.call.gas(300000).value(_amountToRelease)(bytes4(hashedBuyFunctionName)));
+            require(destinationAddress.call.gas(300000).value(_amountToRelease)(bytes4(hashedBuyFunctionName)), "Call to vendor purchase function failed");
         }
 
         balanceRemainingSnapshot = address(this).balance;
@@ -429,7 +432,7 @@ contract PoolParty is Ownable {
             claimTokensFromVendor();
         }
 
-        FundsReleasedToVendor(_amountToRelease, _actualSubsidy, _feeAmount, destinationAddress, now);
+        emit FundsReleasedToVendor(_amountToRelease, _actualSubsidy, _feeAmount, destinationAddress, now);
     }
 
 
@@ -440,17 +443,17 @@ contract PoolParty is Ownable {
         public
         onlyAuthorizedAddress
     {
-        require(poolStatus == Status.InReview);
-        require(poolTokenBalance == 0);
+        require(poolStatus == Status.InReview, "Pool state is not 'InReview'");
+        require(poolTokenBalance == 0, "Pool token balance is greater than 0");
 
         if (hashedClaimFunctionName != keccak256("N/A")) {
-            require(destinationAddress.call(bytes4(hashedClaimFunctionName)));
+            require(destinationAddress.call(bytes4(hashedClaimFunctionName)), "Call to vendors claim function failed");
         }
 
         poolTokenBalance = tokenAddress.balanceOf(address(this));
         if (poolTokenBalance > 0) {
             poolStatus = Status.Claim;
-            ClaimedTokensFromVendor(address(this), poolTokenBalance, now);
+            emit ClaimedTokensFromVendor(address(this), poolTokenBalance, now);
         }
     }
 
@@ -461,18 +464,18 @@ contract PoolParty is Ownable {
         public
         onlyAuthorizedAddress
     {
-        require(poolStatus == Status.InReview);
-        require(poolTokenBalance == 0);
+        require(poolStatus == Status.InReview, "Pool state is not 'InReview'");
+        require(poolTokenBalance == 0, "Pool token balance is greater than 0");
 
-        require(destinationAddress.call(bytes4(hashedRefundFunctionName)));
+        require(destinationAddress.call(bytes4(hashedRefundFunctionName)), "Call to vendors refund function failed");
 
         if (address(this).balance >= totalPoolContributions) {
             poolStatus = Status.Claim;
             balanceRemainingSnapshot = address(this).balance.sub(poolSubsidyAmount);
             msg.sender.transfer(poolSubsidyAmount); //Return the subsidy amount to the vendor as the pool has no claim to this
-            ClaimedRefundFromVendor(address(this), msg.sender, balanceRemainingSnapshot, now);
+            emit ClaimedRefundFromVendor(address(this), msg.sender, balanceRemainingSnapshot, now);
         } else {
-            NoRefundFromVendor(address(this), msg.sender, now);
+            emit NoRefundFromVendor(address(this), msg.sender, now);
         }
     }
 
@@ -481,11 +484,12 @@ contract PoolParty is Ownable {
      */
     function claimTokens() public {
         Participant storage _participant = participants[msg.sender];
-        require(poolStatus == Status.Claim);
-        require(_participant.isActive);
-        require(_participant.amountContributed > 0);
+        require(poolStatus == Status.Claim, "Pool state is not 'Claim'");
+        require(_participant.isActive, "Participant is not active");
+        require(_participant.amountContributed > 0, "Participant contribution is 0");
 
-        var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
+        uint256 _percentageContribution; uint256 _refundAmount; uint256 _tokensDue;
+        (_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(msg.sender);
         if (_participant.percentageContribution == 0) {
             _participant.percentageContribution = _percentageContribution;
             _participant.refundAmount = _refundAmount;
@@ -493,14 +497,14 @@ contract PoolParty is Ownable {
 
         poolTokenBalance = tokenAddress.balanceOf(address(this)); //Get the latest token balance for the pool
 
-        require(_tokensDue > 0); //User has to have tokens due to proceed
+        require(_tokensDue > 0, "Participant's tokens due is 0"); //User has to have tokens due to proceed
 
         _participant.lastAmountTokensClaimed = _tokensDue;
         _participant.totalTokensClaimed = _participant.totalTokensClaimed.add(_tokensDue); //Increment number of tokens claimed by tokens due for this call
         _participant.numberOfTokenClaims = _participant.numberOfTokenClaims.add(1);
         allTokensClaimed = allTokensClaimed.add(_tokensDue); //Increment allTokensClaimed by tokens due
 
-        TokensClaimed(msg.sender, _participant.amountContributed, _tokensDue, now);
+        emit TokensClaimed(msg.sender, _participant.amountContributed, _tokensDue, now);
         tokenAddress.transfer(msg.sender, _tokensDue); //Transfer the tokens to the user
     }
 
@@ -510,23 +514,24 @@ contract PoolParty is Ownable {
      */
     function claimRefund() public {
         Participant storage _participant = participants[msg.sender];
-        require(poolStatus == Status.Claim);
-        require(_participant.isActive);
-        require(_participant.amountContributed > 0);
-        require(!_participant.hasClaimedRefund);
+        require(poolStatus == Status.Claim, "Pool state is not 'Claim'");
+        require(_participant.isActive, "Participant is not active");
+        require(_participant.amountContributed > 0, "Participant contribution is 0");
+        require(!_participant.hasClaimedRefund, "Participant has already claimed a refund");
 
         _participant.hasClaimedRefund = true;
 
-        var(_percentageContribution, _refundAmount,) = calculateParticipationAmounts(msg.sender);
+        uint256 _percentageContribution; uint256 _refundAmount;
+        (_percentageContribution, _refundAmount,) = calculateParticipationAmounts(msg.sender);
 
         if (_participant.percentageContribution == 0) {
             _participant.percentageContribution = _percentageContribution;
             _participant.refundAmount = _refundAmount;
         }
 
-        require(_participant.refundAmount > 0);
+        require(_participant.refundAmount > 0, "Participant's refund amount is 0");
 
-        RefundClaimed(msg.sender, _participant.refundAmount, now);
+        emit RefundClaimed(msg.sender, _participant.refundAmount, now);
         msg.sender.transfer(_participant.refundAmount);
     }
 
@@ -537,9 +542,9 @@ contract PoolParty is Ownable {
         public
         onlyAuthorizedAddress
     {
-        require(poolStatus == Status.DueDiligence);
-        require(reviewPeriodStart != 0);
-        require(now >= reviewPeriodStart + dueDiligenceDuration);
+        require(poolStatus == Status.DueDiligence, "Pool state is not 'DueDiligence'");
+        require(reviewPeriodStart != 0, "Review period has not been started");
+        require(now >= reviewPeriodStart + dueDiligenceDuration, "Due diligence period has not yet elapsed");
 
         poolStatus = Status.InReview;
     }
@@ -578,7 +583,8 @@ contract PoolParty is Ownable {
         if (poolStatus != Status.Claim) {return (0, 0, 0, false);}
 
         Participant storage _participant = participants[_user];
-        var(_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(_user);
+        uint256 _percentageContribution; uint256 _refundAmount; uint256 _tokensDue;
+        (_percentageContribution, _refundAmount, _tokensDue) = calculateParticipationAmounts(_user);
         return (_percentageContribution, _refundAmount, _tokensDue, _participant.hasClaimedRefund);
     }
 
@@ -589,7 +595,7 @@ contract PoolParty is Ownable {
         public
         onlyOwner
     {
-        require(!feeWaived);
+        require(!feeWaived, "Fee has already been waived");
         feeWaived = true;
         feePercentage = 0;
     }
