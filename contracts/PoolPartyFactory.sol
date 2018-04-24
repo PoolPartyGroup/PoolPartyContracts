@@ -76,15 +76,14 @@ contract PoolPartyFactory is Ownable {
     }
 
     /**
-     * @dev Gets the size of the partyList array
-     * @return Size of array
+     * @dev Returns the array of all pool address
      */
-    function getPartyListSize()
+    function getAllPoolAddresses()
         public
         view
-        returns(uint256)
+        returns (address[])
     {
-        return poolAddresses.length;
+        return poolAddresses;
     }
 
     /**
