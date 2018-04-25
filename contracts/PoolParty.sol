@@ -435,7 +435,6 @@ contract PoolParty is Ownable {
         emit FundsReleasedToVendor(_amountToRelease, _actualSubsidy, _feeAmount, destinationAddress, now);
     }
 
-
     /**
      * @dev If tokens are not minted by vendor at time of purchase, they need to be claimed once the sale is over - only the authorized address can do this.
      */
@@ -566,9 +565,9 @@ contract PoolParty is Ownable {
     function getPoolDetails()
         public
         view
-        returns (Status, uint256, uint256, uint256, uint256, uint256)
+        returns (Status, uint256, uint256, uint256, uint256, uint256, string, string, uint256, uint256, string)
     {
-        return (poolStatus, totalPoolContributions, poolParticipants, withdrawalFee, waterMark, reviewPeriodStart);
+        return (poolStatus, totalPoolContributions, poolParticipants, withdrawalFee, waterMark, reviewPeriodStart, poolName, poolDescription, poolPrice, retailPrice, rootDomain);
     }
 
     /**
