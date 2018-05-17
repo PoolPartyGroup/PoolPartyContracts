@@ -43,7 +43,6 @@ contract('PoolParty', (accounts) => {
 
         await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
         await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
-        await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: claimTokensFromVendor(): Generic Sale', () => {

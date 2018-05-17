@@ -78,16 +78,6 @@ contract('Generic Pool Party ICO', function (accounts) {
             assert.equal(totalInvested, web3.toWei("15.5", "ether"), "Incorrect total");
         });
 
-        it("should configure pool", async () => {
-            const poolState = await poolParty.poolStatus();
-            assert.equal(poolState, Status.WaterMarkReached, "Pool in incorrect status");
-            await poolParty.setAuthorizedConfigurationAddress({from: accounts[0]});
-            const poolDetails = await poolParty.getPoolDetails();
-            smartLog("Pool details [" + poolDetails + "]");
-            const configDetails = await poolParty.getConfigDetails();
-            smartLog("Config details [" + configDetails + "]");
-        });
-
         it("should configure pool details", async () => {
             await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: accounts[7]});
             assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");

@@ -38,7 +38,6 @@ contract('PoolParty', (accounts) => {
 
         await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
         await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
-        await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized with buy and claim function. ', () => {
@@ -216,7 +215,6 @@ contract('PoolParty', (accounts) => {
 
             await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
             await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
-            await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
             await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
@@ -247,7 +245,6 @@ contract('PoolParty', (accounts) => {
 
             await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
             await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
-            await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
 
             await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});

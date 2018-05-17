@@ -84,9 +84,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         totalInvested = await poolParty.totalPoolContributions();
         assert.equal(totalInvested, web3.toWei("14", "ether"), "Incorrect total");
         
-        //Set the Authorized Configuration Address
         let poolState = await poolParty.poolStatus();
-        await poolParty.setAuthorizedConfigurationAddress({from: deployer});
         let poolDetails = await poolParty.getPoolDetails();
         smartLog("Pool details [" + poolDetails + "]");
         let configDetails = await poolParty.getConfigDetails();

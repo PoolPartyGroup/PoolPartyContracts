@@ -156,6 +156,8 @@ contract PoolParty is Ownable {
     )
         public
     {
+        require(retailPrice >= poolPrice, "Retails price should not be less than pool price");
+
         rootDomain = _rootDomain;
         poolName = _poolName;
         poolDescription = _poolDescription;
@@ -281,16 +283,6 @@ contract PoolParty is Ownable {
     }
 
     /**
-     * @dev Name Service call to get the authorized configuration address
-     */
-    function setAuthorizedConfigurationAddress() public {
-        require(poolStatus == Status.WaterMarkReached, "Pool state is not 'WaterMarkReached'");
-
-        authorizedConfigurationAddress = nameService.hashedStringResolutions(keccak256(rootDomain));
-        emit AuthorizedAddressConfigured(msg.sender, now);
-    }
-
-    /**
      * @dev Configure sale parameters - only the authorized address can do this
      * @param _destination Address where the pool funds will be sent once released
      * @param _tokenAddress Address of the token being bought (must be an ERC20 token)
@@ -308,7 +300,6 @@ contract PoolParty is Ownable {
         bool _subsidy
     )
         public
-        onlyAuthorizedAddress
     {
         require(poolStatus == Status.WaterMarkReached, "Pool state is not 'WaterMarkReached'");
         require(
@@ -319,6 +310,9 @@ contract PoolParty is Ownable {
             bytes(_claimFnName).length > 0,
             "All input values should be non 0"
         );
+
+        authorizedConfigurationAddress = nameService.hashedStringResolutions(keccak256(rootDomain));
+        require(authorizedConfigurationAddress == msg.sender, "Sender has to be the ACA address");
 
         destinationAddress = _destination;
         tokenAddress = IErc20Token(_tokenAddress);

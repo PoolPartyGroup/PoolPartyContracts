@@ -100,16 +100,11 @@ contract('Pool Party ICO', function (accounts) {
             assert.equal(totalInvested, web3.toWei("11.5", "ether"), "Incorrect total");
         });
 
-        it("should configure sale address", async () => {
+        it("should add additional funds", async () => {
             await poolParty.addFundsToPool(2, {from: _investor2, value: web3.toWei("1", "ether")});
             const poolState = await poolParty.poolStatus();
             smartLog("Pool State is [" + poolState + "]");
             assert.equal(poolState, Status.WaterMarkReached, "Pool in incorrect status");
-            await poolParty.setAuthorizedConfigurationAddress({from: _deployer});
-            const poolDetails = await poolParty.getPoolDetails();
-            smartLog("Foreground pool details [" + poolDetails + "]");
-            const configDetails = await poolParty.getConfigDetails();
-            smartLog("Foreground config details [" + configDetails + "]");
         });
 
         it("should configure pool details", async () => {
