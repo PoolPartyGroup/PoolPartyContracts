@@ -33,7 +33,6 @@ contract('PoolParty', (accounts) => {
         await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("1")});
         await poolParty.addFundsToPool(3, {from: _investor2, value: web3.toWei("1.5")});
         await poolParty.addFundsToPool(2, {from: _investor3, value: web3.toWei("1")});
-        await poolParty.setAuthorizedConfigurationAddress({from: _investor1});
     });
 
     describe('Function: startInReviewPeriod()', () => {
