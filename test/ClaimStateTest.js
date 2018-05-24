@@ -104,7 +104,7 @@ contract('ICO Pool Party', function (accounts) {
 
         async function ConfigurePoolDetails(){
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: investor7});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: investor7});
             assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
         }
         
@@ -148,7 +148,7 @@ contract('ICO Pool Party', function (accounts) {
 
         it("should not be able to claim refund twice", async () => {            
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", true, {from: investor7});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", "www.vendor.com/ppcommunication", true, {from: investor7});
             assert.equal(await poolParty.buyFunctionName(), "buyWithIntentToRefund()", "Wrong buyFunctionName");
 
             await CompleteConfiguration();

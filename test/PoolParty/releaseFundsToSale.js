@@ -42,7 +42,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized with buy and claim function. ', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -119,7 +119,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized with automatic claim. ', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -158,7 +158,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Non Subsidized with buy and claim function.', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", false, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", false, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -188,7 +188,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: releaseFundsToSale() - Generic Sale: Subsidized Automatic Token Allocation', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -216,7 +216,7 @@ contract('PoolParty', (accounts) => {
             await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
             await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
 
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 
@@ -246,7 +246,7 @@ contract('PoolParty', (accounts) => {
             await poolParty.addFundsToPool(13, {from: _investor4, value: web3.toWei("0.52")});
             await poolParty.addFundsToPool(13, {from: _investor2, value: web3.toWei("0.52")});
 
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 

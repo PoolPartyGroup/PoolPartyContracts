@@ -43,7 +43,7 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should set In Review state', async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
 
@@ -53,7 +53,7 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should attempt to set In Review state with unauthorized account', async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
 
@@ -63,7 +63,7 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should attempt to set In Review state before due diligence duration has elapsed', async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
 
             assert.equal(await poolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
@@ -72,7 +72,7 @@ contract('PoolParty', (accounts) => {
         });
 
         it('should attempt to set In Review state when not in Diligence state', async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
 
             assert.notEqual(await poolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
             await expectThrow(poolParty.startInReviewPeriod({from: _saleOwner}));

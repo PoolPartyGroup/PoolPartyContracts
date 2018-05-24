@@ -108,7 +108,7 @@ contract('Pool Party ICO', function (accounts) {
         });
 
         it("should configure pool details", async () => {
-            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _investor7});
+            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _investor7});
             assert.equal(await poolParty.buyFunctionName(), "N/A", "Wrong buyFunctionName");
         });
 

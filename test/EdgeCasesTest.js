@@ -91,7 +91,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         smartLog("Config details [" + configDetails + "]");
 
         //Configure Pool Details
-        await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: investor7});
+        await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: investor7});
         assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
 
         //Complete Configuration

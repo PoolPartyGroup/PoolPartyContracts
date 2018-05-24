@@ -24,6 +24,7 @@ contract PoolParty is Ownable {
     string public buyFunctionName;
     string public refundFunctionName;
     string public claimFunctionName;
+    string public communicationsUrl;
 
     bytes public legalDocsHash;
 
@@ -96,7 +97,7 @@ contract PoolParty is Ownable {
     event ParticipantKicked(address indexed participant, uint256 fee, uint256 amount, KickReason reason, uint256 date);
     event RefundClaimed(address indexed participant, uint256 amount, uint256 date);
     event AuthorizedAddressConfigured(address initiator, uint256 date);
-    event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, bool subsidy, uint256 date);
+    event PoolConfigured(address initiator, address destination, address tokenAddress, string buyFnName, string claimFnName, string refundFnName, bool subsidy, string communicationsUrl, uint256 date);
 
     event ClaimedTokensFromVendor(address indexed owner, uint256 tokenBalance, uint256 date);
     event ClaimedRefundFromVendor(address indexed owner, address initiator, uint256 refundedAmount, uint256 date);
@@ -297,7 +298,8 @@ contract PoolParty is Ownable {
         string _buyFnName,
         string _claimFnName,
         string _refundFnName,
-        bool _subsidy
+        bool _subsidy,
+        string _communicationsUrl
     )
         public
     {
@@ -323,8 +325,9 @@ contract PoolParty is Ownable {
         claimFunctionName = _claimFnName;
         hashedClaimFunctionName = keccak256(claimFunctionName);
         subsidyRequired = _subsidy;
+        communicationsUrl = _communicationsUrl;
 
-        emit PoolConfigured(msg.sender, _destination, _tokenAddress, _buyFnName, _claimFnName, _refundFnName, _subsidy, now);
+        emit PoolConfigured(msg.sender, _destination, _tokenAddress, _buyFnName, _claimFnName, _refundFnName, _subsidy, _communicationsUrl, now);
     }
 
 
@@ -548,9 +551,9 @@ contract PoolParty is Ownable {
     function getConfigDetails()
         public
         view
-        returns (address, address, address, bool, string, string, string)
+        returns (address, address, address, bool, string, string, string, string)
     {
-        return (destinationAddress, tokenAddress, authorizedConfigurationAddress, subsidyRequired, buyFunctionName, refundFunctionName, claimFunctionName);
+        return (destinationAddress, tokenAddress, authorizedConfigurationAddress, subsidyRequired, buyFunctionName, refundFunctionName, claimFunctionName, communicationsUrl);
     }
 
     /**

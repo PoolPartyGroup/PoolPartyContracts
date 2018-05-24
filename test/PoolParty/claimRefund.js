@@ -50,7 +50,7 @@ contract('PoolParty', (accounts) => {
             customSale = await customSaleArtifact.new(web3.toWei("0.05"), genericToken.address, {from: _deployer});
             await genericToken.transferOwnership(customSale.address, {from: _deployer});
 
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
@@ -94,7 +94,7 @@ contract('PoolParty', (accounts) => {
             await foregroundTokenSale.configureSale(tokenSaleStartBlockNumber, tokenSaleEndBlockNumber, _foregroundSaleAddresses, 50, _foregroundSaleAddresses, _foregroundSaleAddresses, _foregroundSaleAddresses, _foregroundSaleAddresses, {from: _deployer});
             dealToken = dealTokenArtifact.at(await foregroundTokenSale.dealToken());
 
-            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
+            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});

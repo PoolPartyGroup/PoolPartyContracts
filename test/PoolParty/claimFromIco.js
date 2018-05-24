@@ -47,7 +47,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: claimTokensFromVendor(): Generic Sale', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
@@ -89,7 +89,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: claimTokensFromVendor(): Generic Sale (automatically call claimTokensFromVendor)', () => {
         it('should claim tokens from ICO', async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
@@ -104,7 +104,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: claimTokensFromVendor(): Generic Sale', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
         });
@@ -144,7 +144,7 @@ contract('PoolParty', (accounts) => {
             await foregroundTokenSale.configureSale(tokenSaleStartBlockNumber, tokenSaleEndBlockNumber, _foregroundSaleAddresses, 50, _foregroundSaleAddresses, _foregroundSaleAddresses, _foregroundSaleAddresses, _foregroundSaleAddresses, {from: _deployer});
             dealToken = dealTokenArtifact.at(await foregroundTokenSale.dealToken());
 
-            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
+            await poolParty.configurePool(foregroundTokenSale.address, dealToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
@@ -178,7 +178,7 @@ contract('PoolParty', (accounts) => {
 
     describe('Function: claimRefundFromVendor()', () => {
         beforeEach(async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buyWithIntentToRefund()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
         });
 

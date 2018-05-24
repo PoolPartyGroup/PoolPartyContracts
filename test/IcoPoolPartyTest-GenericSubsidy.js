@@ -79,7 +79,7 @@ contract('Generic Pool Party ICO', function (accounts) {
         });
 
         it("should configure pool details", async () => {
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: accounts[7]});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: accounts[7]});
             assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
             //await poolParty.addFundsToPool(2, {from: _investor3, value: web3.toWei("1")});
         });

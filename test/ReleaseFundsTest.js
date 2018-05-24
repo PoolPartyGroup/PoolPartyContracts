@@ -104,7 +104,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
         async function ConfigurePoolDetails(){
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: accounts[7]});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: accounts[7]});
             assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
         }
         
@@ -244,7 +244,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
 
             //await ConfigurePoolDetails();
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, {from: accounts[7]});
+            await poolParty.configurePool(customSale.address, genericToken.address, "buy()", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: accounts[7]});
             assert.equal(await poolParty.buyFunctionName(), "buy()", "Wrong buyFunctionName");
 
             await CompleteConfiguration();
@@ -376,7 +376,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         it("should send Ether into fallback function if buy() not set...", async () => {
 
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "N/A", "TestValue", "refund()", true, {from: accounts[7]});
+            await poolParty.configurePool(customSale.address, genericToken.address, "N/A", "TestValue", "refund()", true, "www.vendor.com/ppcommunication", {from: accounts[7]});
             assert.equal(await poolParty.buyFunctionName(), "N/A", "Wrong buyFunctionName");
 
             await CompleteConfiguration();
@@ -408,7 +408,7 @@ contract('Generic Pool Party ICO - Release Funds', function (accounts) {
         it("should should be able to call claim() after ReleaseFundsToSale() after minting tokens", async () => {
             
             //Configure Pool Details
-            await poolParty.configurePool(customSale.address, genericToken.address, "N/A", "N/A", "refund()", true, {from: accounts[7]});
+            await poolParty.configurePool(customSale.address, genericToken.address, "N/A", "N/A", "refund()", true, "www.vendor.com/ppcommunication", {from: accounts[7]});
             assert.equal(await poolParty.buyFunctionName(), "N/A", "Wrong buyFunctionName");
 
             await CompleteConfiguration();

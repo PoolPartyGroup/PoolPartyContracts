@@ -60,7 +60,7 @@ contract('PoolParty', (accounts) => {
 
         it('should add funds to pool when in "Due Diligence" status', async () => {
             await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("0.8")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
 
@@ -72,7 +72,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to add funds to pool when in "In Review" status', async () => {
             await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("0.8")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
             await sleep(DUE_DILIGENCE_DURATION);
@@ -190,7 +190,7 @@ contract('PoolParty', (accounts) => {
         it('should leave pool in "Due Diligence" status', async () => {
             await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("0.8")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.poolStatus(), Status.DueDiligence, "Pool in incorrect status");
 
@@ -205,7 +205,7 @@ contract('PoolParty', (accounts) => {
             await poolParty.addFundsToPool(2, {from: _investor1, value: web3.toWei("0.8")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
             await poolParty.addFundsToPool(1, {from: _investor3, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "N/A", "claimToken()", "claimRefund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             await sleep(DUE_DILIGENCE_DURATION);
             await poolParty.startInReviewPeriod({from: _saleOwner});
@@ -261,7 +261,7 @@ contract('PoolParty', (accounts) => {
     describe('Function: configurePool()', () => {
         it('should configure pool', async () => {
             await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("0.8")});
-            await poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
 
             assert.equal(await poolParty.destinationAddress(), _saleAddress, "Incorrect Sale Owner Configured");
             assert.equal(await poolParty.tokenAddress(), _tokenAddress, "Incorrect Sale Owner Configured");
@@ -275,24 +275,24 @@ contract('PoolParty', (accounts) => {
 
         it('should attempt to configure pool in before setting the authorized configuration address', async () => {
             await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("0.8")});
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "", "claim()", "refund()", true, {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
             assert.equal(await poolParty.destinationAddress(), ZERO_ADDRESS, "Configuration should not have been completed");
         });
 
         it('should attempt to configure pool in before watermark reached', async () => {
             await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.4")});
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
             assert.equal(await poolParty.destinationAddress(), ZERO_ADDRESS, "Configuration should not have been completed");
         });
 
         it('should attempt to configure pool with incorrect values', async () => {
             await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("0.8")});
 
-            await expectThrow(poolParty.configurePool(ZERO_ADDRESS, _tokenAddress, "buy()", "claim()", "refund()", true, {from: _saleOwner}));
-            await expectThrow(poolParty.configurePool(_saleOwner, ZERO_ADDRESS, "buy()", "claim()", "refund()", true, {from: _saleOwner}));
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "", "claim()", "refund()", true, {from: _saleOwner}));
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "", "refund()", true, {from: _saleOwner}));
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "", true, {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(ZERO_ADDRESS, _tokenAddress, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleOwner, ZERO_ADDRESS, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
 
             assert.equal(await poolParty.destinationAddress(), ZERO_ADDRESS, "Sale configuration should not have been completed");
         });
@@ -303,13 +303,13 @@ contract('PoolParty', (accounts) => {
             await poolParty.leavePool({from: _investor4});
             assert.equal(await poolParty.poolStatus(), Status.Open, "Pool in incorrect status");
 
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, {from: _saleOwner}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner}));
             assert.equal(await poolParty.destinationAddress(), ZERO_ADDRESS, "Configuration should not have been completed");
         });
 
         it('should attempt to configure pool with non authorized configuration address', async () => {
             await poolParty.addFundsToPool(2, {from: _investor2, value: web3.toWei("0.8")});
-            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, {from: _investor4}));
+            await expectThrow(poolParty.configurePool(_saleAddress, _tokenAddress, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _investor4}));
             assert.equal(await poolParty.destinationAddress(), ZERO_ADDRESS, "Configuration should not have been completed");
         });
     });
@@ -317,7 +317,7 @@ contract('PoolParty', (accounts) => {
     describe('Function: completeConfiguration()', () => {
         it('should attempt to complete configuration with non authorized configuration address', async () => {
             await poolParty.addFundsToPool(2, {from: _investor4, value: web3.toWei("0.8")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await expectThrow(poolParty.completeConfiguration({from: _investor1}));
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
         });
@@ -354,7 +354,7 @@ contract('PoolParty', (accounts) => {
         it('should kick user', async () => {
             await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.4")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("0.8"), "Incorrect total investment balance");
             assert.equal(await poolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -371,7 +371,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to kick user before due diligence has elapsed', async () => {
             await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.4")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("0.8"), "Incorrect total investment balance");
             assert.equal(await poolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -385,7 +385,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to kick user using non authorized configuration account', async () => {
             await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.4")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("0.8"), "Incorrect total investment balance");
             assert.equal(await poolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -407,7 +407,7 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolStatus(), Status.WaterMarkReached, "Pool in incorrect status");
             await expectThrow(poolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await expectThrow(poolParty.kickUser(_investor2, KickReason.Other, {from: _saleOwner}));
 
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("0.8"), "Incorrect total investment balance");
@@ -417,7 +417,7 @@ contract('PoolParty', (accounts) => {
         it('should attempt to kick user that does not exist', async () => {
             await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.4")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("0.8"), "Incorrect total investment balance");
             assert.equal(await poolParty.poolParticipants(), 2, "Incorrect number of participants");
@@ -442,7 +442,7 @@ contract('PoolParty', (accounts) => {
             assert.equal(await poolParty.poolParticipants(), 4, "Incorrect number of participants");
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("1.6"), "Incorrect total investment balance");
 
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
 
             await sleep(DUE_DILIGENCE_DURATION);
@@ -468,7 +468,7 @@ contract('PoolParty', (accounts) => {
         it.skip('should check that the fee has been paid to the executor of the transaction, and the rest of the funds sent to investor', async () => {
             await poolParty.addFundsToPool(1, {from: _investor4, value: web3.toWei("0.4")});
             await poolParty.addFundsToPool(1, {from: _investor2, value: web3.toWei("0.4")});
-            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, {from: _saleOwner});
+            await poolParty.configurePool(_saleAddress, genericToken.address, "buy()", "claim()", "refund()", true, "www.vendor.com/ppcommunication", {from: _saleOwner});
             await poolParty.completeConfiguration({from: _saleOwner});
             assert.equal(await poolParty.totalPoolContributions(), web3.toWei("0.8"), "Incorrect total investment balance");
             assert.equal(await poolParty.poolParticipants(), 2, "Incorrect number of participants");
