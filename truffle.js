@@ -10,6 +10,11 @@ module.exports = {
             port: 8545,
             network_id: "*" // match any network
         },
+        ganache: {
+            host: "localhost",
+            port: 9545,
+            network_id: "5777"
+        },
         mainnet: {
             provider: function () {
                 return new HDWalletProvider(process.env.MAINNET_MNEMONIC, "https://mainnet.infura.io/" + process.env.INFURA_API_KEY);
