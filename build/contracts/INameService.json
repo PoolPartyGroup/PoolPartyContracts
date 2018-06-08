@@ -1,0 +1,209 @@
+{
+  "contractName": "INameService",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "hashedStringResolutions",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5060d58061001f6000396000f300608060405260043610603e5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416632521e3ba81146043575b600080fd5b348015604e57600080fd5b5060586004356081565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b60006020819052908152604090205473ffffffffffffffffffffffffffffffffffffffff16815600a165627a7a7230582014871221cb727e235ec959814b29c685b23c560a78318886d4726ec38e823dc40029",
+  "deployedBytecode": "0x608060405260043610603e5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416632521e3ba81146043575b600080fd5b348015604e57600080fd5b5060586004356081565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b60006020819052908152604090205473ffffffffffffffffffffffffffffffffffffffff16815600a165627a7a7230582014871221cb727e235ec959814b29c685b23c560a78318886d4726ec38e823dc40029",
+  "sourceMap": "26:89:4:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;26:89:4;;;;;;;",
+  "deployedSourceMap": "26:89:4:-;;;;;;;;;;;;;;;;;;;;;;;54:58;;8:9:-1;5:2;;;30:1;27;20:12;5:2;-1:-1;54:58:4;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o",
+  "source": "pragma solidity ^0.4.18;\n\ncontract INameService {\n    mapping(bytes32 => address) public hashedStringResolutions;\n}\n",
+  "sourcePath": "/Users/shanevancoller/Development/blockchain/PoolParty/PoolPartyContracts/contracts/interfaces/INameService.sol",
+  "ast": {
+    "absolutePath": "/Users/shanevancoller/Development/blockchain/PoolParty/PoolPartyContracts/contracts/interfaces/INameService.sol",
+    "exportedSymbols": {
+      "INameService": [
+        2292
+      ]
+    },
+    "id": 2293,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2287,
+        "literals": [
+          "solidity",
+          "^",
+          "0.4",
+          ".18"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:4"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 2292,
+        "linearizedBaseContracts": [
+          2292
+        ],
+        "name": "INameService",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 2291,
+            "name": "hashedStringResolutions",
+            "nodeType": "VariableDeclaration",
+            "scope": 2292,
+            "src": "54:58:4",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_bytes32_$_t_address_$",
+              "typeString": "mapping(bytes32 => address)"
+            },
+            "typeName": {
+              "id": 2290,
+              "keyType": {
+                "id": 2288,
+                "name": "bytes32",
+                "nodeType": "ElementaryTypeName",
+                "src": "62:7:4",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bytes32",
+                  "typeString": "bytes32"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "54:27:4",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_bytes32_$_t_address_$",
+                "typeString": "mapping(bytes32 => address)"
+              },
+              "valueType": {
+                "id": 2289,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "73:7:4",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 2293,
+        "src": "26:89:4"
+      }
+    ],
+    "src": "0:116:4"
+  },
+  "legacyAST": {
+    "absolutePath": "/Users/shanevancoller/Development/blockchain/PoolParty/PoolPartyContracts/contracts/interfaces/INameService.sol",
+    "exportedSymbols": {
+      "INameService": [
+        2292
+      ]
+    },
+    "id": 2293,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2287,
+        "literals": [
+          "solidity",
+          "^",
+          "0.4",
+          ".18"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:4"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 2292,
+        "linearizedBaseContracts": [
+          2292
+        ],
+        "name": "INameService",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 2291,
+            "name": "hashedStringResolutions",
+            "nodeType": "VariableDeclaration",
+            "scope": 2292,
+            "src": "54:58:4",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_bytes32_$_t_address_$",
+              "typeString": "mapping(bytes32 => address)"
+            },
+            "typeName": {
+              "id": 2290,
+              "keyType": {
+                "id": 2288,
+                "name": "bytes32",
+                "nodeType": "ElementaryTypeName",
+                "src": "62:7:4",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bytes32",
+                  "typeString": "bytes32"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "54:27:4",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_bytes32_$_t_address_$",
+                "typeString": "mapping(bytes32 => address)"
+              },
+              "valueType": {
+                "id": 2289,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "73:7:4",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 2293,
+        "src": "26:89:4"
+      }
+    ],
+    "src": "0:116:4"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.23+commit.124ca40d.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "2.0.0",
+  "updatedAt": "2018-06-08T03:56:12.640Z"
+}
